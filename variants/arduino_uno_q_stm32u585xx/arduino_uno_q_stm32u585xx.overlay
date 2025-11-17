@@ -96,15 +96,13 @@
 		status = "okay";
 		/* tim1_etr_pa12 is not available for PWM */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		/* pinctrl-0 = <&tim1_ch4_pa11 &tim1_ch3n_pb15 &tim1_ch1n_pb13 &tim1_ch2n_pb14>; */
-		pinctrl-0 = <&tim1_ch4_pa11>;
+		pinctrl-0 = <&tim1_ch4_pa11 &tim1_ch3n_pb15 &tim1_ch1n_pb13 &tim1_ch2n_pb14>;
 		pinctrl-names = "default";
 	};
 };
 
 /* Currently only the pins marked with ~ on the pin headers are enabled */
 /* PB10 and PB11 conflict with I2C configuation */
-/*
 &timers2 {
 	status = "okay";
 	st,prescaler = <4>;
@@ -115,7 +113,6 @@
 		pinctrl-names = "default";
 	};
 };
-*/
 
 &timers3 {
 	status = "okay";
@@ -124,8 +121,7 @@
 	pwm3: pwm {
 		status = "okay";
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		/* pinctrl-0 = <&tim3_ch3_pb0 &tim3_ch4_pb1 &tim3_ch1_pb4>; */
-		pinctrl-0 = <&tim3_ch3_pb0 &tim3_ch4_pb1>;
+		pinctrl-0 = <&tim3_ch3_pb0 &tim3_ch4_pb1 &tim3_ch1_pb4>;
 		pinctrl-names = "default";
 	};
 };
@@ -138,8 +134,7 @@
 		status = "okay";
 		/* PB6 PB7 not usable for PWM until dynamic pin muxing works */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		/* pinctrl-0 = <&tim4_ch3_pb8 &tim4_ch4_pb9 &tim4_ch1_pb6 &tim4_ch2_pb7>; */
-		pinctrl-0 = <&tim4_ch3_pb8 &tim4_ch4_pb9>;
+		pinctrl-0 = <&tim4_ch3_pb8 &tim4_ch4_pb9 &tim4_ch1_pb6 &tim4_ch2_pb7>;
 		pinctrl-names = "default";
 	};
 };
@@ -156,7 +151,6 @@
 };
 
 /* Currently only the pins marked with ~ on the pin headers are enabled */
-/*
 &timers8 {
 	status = "okay";
 	st,prescaler = <4>;
@@ -167,7 +161,6 @@
 		pinctrl-names = "default";
 	};
 };
-*/
 
 &timers16 {
 	status = "okay";
@@ -287,25 +280,25 @@
 
 		/* PWM pin mapping - Digital pins with their timer channels */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		pwm-pin-gpios =
-				/* <&gpiob 6 0>, */    /* D1/PB6 - TIM4_CH1 */
-				/* <&gpiob 3 0>, */     /* D2/PB3 - TIM2_CH2 */
-				/* <&gpiob 3 0>, */    /* D2/PB3 - TIM2_CH2 */
-				<&gpiob 0 0>,     /* D3/PB0 - TIM3_CH3 */
-				<&gpioa 11 0>,    /* D5/PA11 - TIM1_CH4 */
-				<&gpiob 1 0>,     /* D6/PB1 - TIM3_CH4 */
-				/* <&gpiob 2 0>, */    /* D7/PB2 - TIM8_CH4N */
-				/* <&gpiob 4 0>, */    /* D8/PB4 - TIM3_CH1 */
-				<&gpiob 8 0>,     /* D9/PB8 - TIM4_CH3 */
-				<&gpiob 9 0>,     /* D10/PB9 - TIM4_CH4 */
-				/* <&gpiob 15 0>, */   /* D11/PB15 - TIM1_CH3N */
-				/* <&gpiob 14 0>, */   /* D12/PB14 - TIM1_CH2N */
-				/* <&gpiob 13 0>, */   /* D13/PB13 - TIM1_CH1N */
-				/* <&gpiob 11 0>, */   /* D20/PB11 - TIM2_CH4 */
-				/* <&gpiob 10 0>; */   /* D21/PB10 - TIM2_CH3 */
-				<&gpioh 10 0>,    /* LED3_R - TIM5_CH1 */
-				<&gpioh 11 0>,    /* LED3_G - TIM5_CH2 */
-				<&gpioh 12 0>;    /* LED3_B - TIM5_CH3 */
+		pwm-pin-gpios =	
+				<&gpiob 7 0>,    /* D0/PB6 - TIM4_CH2 */
+				<&gpiob 6 0>,    /* D1/PB6 - TIM4_CH1 */
+				<&gpiob 3 0>,    /* D2/PB3 - TIM2_CH2 */
+				<&gpiob 0 0>,    /* D3/PB0 - TIM3_CH3 */
+				<&gpioa 11 0>,   /* D5/PA11 - TIM1_CH4 */
+				<&gpiob 1 0>,    /* D6/PB1 - TIM3_CH4 */
+				<&gpiob 2 0>,    /* D7/PB2 - TIM8_CH4N */
+				<&gpiob 4 0>,    /* D8/PB4 - TIM3_CH1 */
+				<&gpiob 8 0>,    /* D9/PB8 - TIM4_CH3 */
+				<&gpiob 9 0>,    /* D10/PB9 - TIM4_CH4 */
+				<&gpiob 15 0>,   /* D11/PB15 - TIM1_CH3N */
+				<&gpiob 14 0>,   /* D12/PB14 - TIM1_CH2N */
+				<&gpiob 13 0>,   /* D13/PB13 - TIM1_CH1N */
+				<&gpiob 11 0>,   /* D20/PB11 - TIM2_CH4 */
+				<&gpiob 10 0>,   /* D21/PB10 - TIM2_CH3 */
+				<&gpioh 10 0>,   /* LED3_R - TIM5_CH1 */
+				<&gpioh 11 0>,   /* LED3_G - TIM5_CH2 */
+				<&gpioh 12 0>;   /* LED3_B - TIM5_CH3 */
 
 		adc-pin-gpios =	<&gpioa 4 0>,
 					<&gpioa 5 0>,
@@ -319,22 +312,22 @@
 		spis = <&spi2>, <&spi3>;
 		/* PWM mapping for the digital pins  */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		pwms =
-		       /* <&pwm4 2 PWM_HZ(500) PWM_POLARITY_NORMAL>, */  /* D0/PB7 → TIM4_CH2 */
-		       /* <&pwm4 1 PWM_HZ(500) PWM_POLARITY_NORMAL>, */  /* D1/PB6 → TIM4_CH1 */
-		       /* <&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>, */   /* D2/PB3 → TIM2_CH2 */
+		pwms = 
+		       <&pwm4 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D0/PB7 → TIM4_CH2 */
+		       <&pwm4 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D1/PB6 → TIM4_CH1 */
+		       <&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D2/PB3 → TIM2_CH2 */
 		       <&pwm3 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D3/PB0 → TIM3_CH3 */
 		       <&pwm1 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D5/PA11 → TIM1_CH4 */
 		       <&pwm3 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D6/PB1 → TIM3_CH4 */
-		       /* <&pwm8 4 PWM_HZ(500) PWM_POLARITY_INVERTED>, */ /* D7/PB2 → TIM8_CH4N */
-		       /* <&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>, */   /* D8/PB4 → TIM3_CH1 */
+		       <&pwm8 4 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D7/PB2 → TIM8_CH4N */
+		       <&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D8/PB4 → TIM3_CH1 */
 		       <&pwm4 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D9/PB8 → TIM4_CH3 */
 		       <&pwm4 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D10/PB9 → TIM4_CH4 */
-		       /* <&pwm1 3 PWM_HZ(500) PWM_POLARITY_INVERTED>, */ /* D11/PB15 → TIM1_CH3N */
-		       /* <&pwm1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>, */ /* D12/PB14 → TIM1_CH2N */
-		       /* <&pwm1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>, */ /* D13/PB13 → TIM1_CH1N */
-		       /* <&pwm2 4 PWM_HZ(500) PWM_POLARITY_NORMAL>, */   /* D20/PB11 → TIM2_CH4 */
-		       /* <&pwm2 3 PWM_HZ(500) PWM_POLARITY_NORMAL>; */   /* D21/PB10 → TIM2_CH3 */
+		       <&pwm1 3 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D11/PB15 → TIM1_CH3N */
+		       <&pwm1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D12/PB14 → TIM1_CH2N */
+		       <&pwm1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D13/PB13 → TIM1_CH1N */
+		       <&pwm2 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D20/PB11 → TIM2_CH4 */
+		       <&pwm2 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D21/PB10 → TIM2_CH3 */
 		       <&pwm5 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,   /* LED3_R/PH10 → TIM5_CH1 */
 		       <&pwm5 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,   /* LED3_G/PH11 → TIM5_CH2 */
 		       <&pwm5 3 PWM_HZ(500) PWM_POLARITY_INVERTED>;   /* LED3_B/PH12 → TIM5_CH3 */
@@ -348,6 +341,9 @@
 				<&adc1 12>,   /* A3 - PA7 */
 				<&adc1 2>,    /* A4 - PC1 */
 				<&adc1 1>;    /* A5 - PC0 */
+
+		dac-pin-gpios =	<&gpioa 4 0>,
+				<&gpioa 5 0>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
