@@ -57,6 +57,7 @@ arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg({0}), i2c_dev(
 }
 
 void arduino::ZephyrI2C::begin() {
+	i2c_dev->ops.init(i2c_dev);
 }
 
 void arduino::ZephyrI2C::begin(uint8_t slaveAddr) {
@@ -72,6 +73,9 @@ void arduino::ZephyrI2C::end() {
 	if (i2c_cfg.address) {
 		i2c_target_unregister(i2c_dev, &i2c_cfg);
 		memset(&i2c_cfg, 0, sizeof(i2c_cfg));
+	}
+	if (i2c_dev->ops.deinit) {
+		i2c_dev->ops.deinit(i2c_dev);
 	}
 }
 
