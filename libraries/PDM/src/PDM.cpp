@@ -5,13 +5,19 @@
 #include <zephyr/audio/dmic.h>
 #include <zephyr/drivers/regulator.h>
 
-/* 
+/* --------------
+ * CONFIGURATION 
+ * ------------- */
+
+#define PDM_DEBUG_ENABLED
+
+
+/* ---------------------------------------------------------------------------
  * Define a Thread to "simulate" irq behavior as expected by PDM API
- */
+ * --------------------------------------------------------------------------*/
 
 #define PDM_THREAD_STACK_SIZE  1024
 #define PDM_THREAD_PRIORITY    7
-
 
 static void pdm_thread(void *, void *, void *);
 
@@ -34,42 +40,52 @@ void pdm_thread(void *, void *, void *) {
     }
 }
 
+/* ----------------------------------------------------------------------------
+ * Define MACROS to understand if a power regulator is defined in DT for the
+ * microphone
+ * ------------------------------------------------------------------------- */
 
-/* 
- * DT_NODELABEL(mic_pwr) gets the node ID.
- * DT_NODE_HAS_STATUS(..., okay) returns 1 if status is "okay", 0 otherwise.
- */
+/* DT_NODELABEL(mic_pwr) gets the node ID.
+ * DT_NODE_HAS_STATUS(..., okay) returns 1 if status is "okay", 0 otherwise. */
 #define MIC_PWR_NODE DT_NODELABEL(mic_pwr)
-
-/*
- * If the node exists, we get the device pointer.
- * If not, we set the pointer to NULL.
- */
 
 #if DT_NODE_EXISTS(MIC_PWR_NODE) && DT_NODE_HAS_STATUS(MIC_PWR_NODE, okay)
     static const struct device *mic_regulator = DEVICE_DT_GET(MIC_PWR_NODE);
     #define MIC_PWR_PRESENT
 #endif
 
-//static const struct device *mic_regulator = DEVICE_DT_GET(DT_NODELABEL(mic_pwr));
+/* ----------------------------------------------------------------------------
+ * PDM CLASS
+ * ------------------------------------------------------------------------- */
+
+/* the PDM mic zephyr device */
+static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 
 /* --- CONSTRUCTORs --- */
-
 PDMClass::PDMClass() : active(false) {}
 PDMClass::PDMClass(int pwrPin) : _pwrPin(pwrPin) {}
 
-
-
-
-
 /* --- DESTRUCTOR --- */
-
 PDMClass::~PDMClass() {}
 
 /* --- PUBLIC FUNCTIONS --- */
 
 int PDMClass::begin(int channels, int sampleRate) {
 	
+	//#ifdef pippo	
+	if (!device_is_ready(dmic_dev)) {
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.print("[WRN]: PDM " + String(dmic_dev->name) + " is not ready");
+		#endif
+		return 0;
+	}
+	//#endif
+
+
+
+
+
+
 	if(!active) {
 		/* HANDLE PWR PIN (IF PRESENT) */
 		#ifdef MIC_PWR_PRESENT

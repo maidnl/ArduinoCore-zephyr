@@ -43,6 +43,7 @@ void PDMDoubleBuffer::clear() {
 
 PDMDoubleBuffer::~PDMDoubleBuffer()
 {
+  clear();
 }
 
 void PDMDoubleBuffer::setSize(int size)
