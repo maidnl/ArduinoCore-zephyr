@@ -1,0 +1,142 @@
+#include "PDM.h"
+#include <cstdint>
+
+#include <zephyr/kernel.h>
+#include <zephyr/audio/dmic.h>
+#include <zephyr/drivers/regulator.h>
+
+/* 
+ * Define a Thread to "simulate" irq behavior as expected by PDM API
+ */
+
+#define PDM_THREAD_STACK_SIZE  1024
+#define PDM_THREAD_PRIORITY    7
+
+
+static void pdm_thread(void *, void *, void *);
+
+K_THREAD_DEFINE(pdm_tid, PDM_THREAD_STACK_SIZE, pdm_thread, NULL, NULL, NULL,
+                PDM_THREAD_PRIORITY, 0, 0);
+
+void pdm_thread(void *, void *, void *) {
+  
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    /* suspend immediately the thread, until begin is not called */
+    k_thread_suspend(pdm_tid);
+
+    while (true) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        k_msleep(200);
+
+        digitalWrite(LED_BUILTIN, LOW);
+        k_msleep(200);
+    }
+}
+
+
+/* 
+ * DT_NODELABEL(mic_pwr) gets the node ID.
+ * DT_NODE_HAS_STATUS(..., okay) returns 1 if status is "okay", 0 otherwise.
+ */
+#define MIC_PWR_NODE DT_NODELABEL(mic_pwr)
+
+/*
+ * If the node exists, we get the device pointer.
+ * If not, we set the pointer to NULL.
+ */
+
+#if DT_NODE_EXISTS(MIC_PWR_NODE) && DT_NODE_HAS_STATUS(MIC_PWR_NODE, okay)
+    static const struct device *mic_regulator = DEVICE_DT_GET(MIC_PWR_NODE);
+    #define MIC_PWR_PRESENT
+#endif
+
+//static const struct device *mic_regulator = DEVICE_DT_GET(DT_NODELABEL(mic_pwr));
+
+/* --- CONSTRUCTORs --- */
+
+PDMClass::PDMClass() : active(false) {}
+PDMClass::PDMClass(int pwrPin) : _pwrPin(pwrPin) {}
+
+
+
+
+
+/* --- DESTRUCTOR --- */
+
+PDMClass::~PDMClass() {}
+
+/* --- PUBLIC FUNCTIONS --- */
+
+int PDMClass::begin(int channels, int sampleRate) {
+	
+	if(!active) {
+		/* HANDLE PWR PIN (IF PRESENT) */
+		#ifdef MIC_PWR_PRESENT
+		if (device_is_ready(mic_regulator)) {
+			#ifdef PDM_DEBUG_ENABLED
+			Serial.println("[LOG]: mic regulator enabled");
+			#endif
+			regulator_enable(mic_regulator);
+        	} else {
+			return 0;
+		}
+		#endif
+
+
+
+
+
+			#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: TH STARTING...");
+			#endif
+		k_thread_resume(pdm_tid);
+		active = true;
+	}
+
+	
+	
+
+
+	(void)channels;
+   (void)sampleRate;
+   return 1;
+
+}
+
+void PDMClass::end() {
+	if(active) {
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: TH STOPPING...");
+		#endif
+		k_thread_suspend(pdm_tid);
+		active = false;
+		/* HANDLE PWR PIN (IF PRESENT) */
+		#ifdef MIC_PWR_PRESENT
+		regulator_disable(mic_regulator);
+		#endif
+	}
+}
+
+int PDMClass::available() {
+	return 1;
+}
+
+int PDMClass::read(void* buffer, size_t size) {
+	(void)buffer;
+	(void)size;
+	return 1;
+}
+
+void PDMClass::onReceive(void(* func)(void)) {
+   (void)func;
+}
+
+void PDMClass::setGain(int gain) {
+   (void)gain;
+}
+
+size_t PDMClass::getBufferSize() {
+	return 1;
+
+}
