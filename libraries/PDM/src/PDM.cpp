@@ -12,6 +12,11 @@
 
 #define PDM_DEBUG_ENABLED
 
+/* ---------------------------------------------------------------------------
+ * Define a mutex to deal with double buffer and threads
+ * --------------------------------------------------------------------------*/
+
+K_MUTEX_DEFINE(pdm_mutex);
 
 /* ---------------------------------------------------------------------------
  * Define a Thread to "simulate" irq behavior as expected by PDM API
@@ -139,8 +144,12 @@ void PDMClass::end() {
 	}
 }
 
+/* ______________________________________________________________available() */
 int PDMClass::available() {
-	return 1;
+  k_mutex_lock(&pdm_mutex, K_FOREVER);
+  size_t avail = db.available();
+  k_mutex_unlock(&pdm_mutex);
+  return (int)avail;
 }
 
 int PDMClass::read(void* buffer, size_t size) {
