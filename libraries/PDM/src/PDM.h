@@ -25,17 +25,11 @@ public:
   void setGain(int gain);
   size_t getBufferSize();
 
-// private:
 
 private:
+  int _pwrPin;
   bool active;
   PDMDoubleBuffer db;
-  int _pwrPin;
-
-  int set_up_double_buffer();
-  int set_up_double_buffer_1();
-  
-  void (*_onReceive)(void);
 };
 
 }

@@ -1,4 +1,5 @@
 #include "PDM.h"
+#include <cstddef>
 #include <cstdint>
 
 #include <zephyr/kernel.h>
@@ -57,6 +58,10 @@ void pdm_thread(void *, void *, void *) {
 /* ----------------------------------------------------------------------------
  * PDM CLASS
  * ------------------------------------------------------------------------- */
+
+/* data available callback function */
+static void (*_onReceive)(void) = NULL;
+
 
 /* the PDM mic zephyr device */
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
@@ -145,7 +150,7 @@ int PDMClass::read(void* buffer, size_t size) {
 }
 
 void PDMClass::onReceive(void(* func)(void)) {
-   (void)func;
+  _onReceive = func;
 }
 
 void PDMClass::setGain(int gain) {
