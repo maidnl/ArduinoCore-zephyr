@@ -152,10 +152,12 @@ int PDMClass::available() {
   return (int)avail;
 }
 
+/* ___________________________________________________________________read() */
 int PDMClass::read(void* buffer, size_t size) {
-	(void)buffer;
-	(void)size;
-	return 1;
+  k_mutex_lock(&pdm_mutex, K_FOREVER);
+  int read = db.read(buffer, size);
+  k_mutex_unlock(&pdm_mutex);
+  return read;
 }
 
 void PDMClass::onReceive(void(* func)(void)) {
