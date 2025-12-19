@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <zephyr/kernel.h>
-#include <zephyr/audio/dmic.h>
 #include <zephyr/drivers/regulator.h>
 
 /* --------------
@@ -11,6 +10,16 @@
  * ------------- */
 
 #define PDM_DEBUG_ENABLED
+
+/* --------------------------------------------------------------------------
+ * Define a slab used by pdm stream
+ * ------------------------------------------------------------------------- */
+
+#define SLAB_BLOCK_SIZE   DEFAULT_PDM_BUFFER_SIZE
+#define SLAB_BLOCK_NUM        2
+#define SLAB_ALIGN            4
+//K_MEM_SLAB_DEFINE(name, slab_block_size, slab_num_blocks, slab_align)
+K_MEM_SLAB_DEFINE_STATIC(pdm_slab, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM, SLAB_ALIGN);
 
 /* ---------------------------------------------------------------------------
  * Define a mutex to deal with double buffer and threads
@@ -24,25 +33,41 @@ K_MUTEX_DEFINE(pdm_mutex);
 
 #define PDM_THREAD_STACK_SIZE  1024
 #define PDM_THREAD_PRIORITY    7
-
+/* PDM receiving thread */
 static void pdm_thread(void *, void *, void *);
+/* data available callback function */
+static void (*_onReceive)(void) = NULL;
+/* the PDM mic zephyr device */
+static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 
 K_THREAD_DEFINE(pdm_tid, PDM_THREAD_STACK_SIZE, pdm_thread, NULL, NULL, NULL,
                 PDM_THREAD_PRIORITY, 0, 0);
 
 void pdm_thread(void *, void *, void *) {
-  
+ 
+    void *buffer;
+    uint32_t size;
+ 
+    #ifdef PDM_DEBUG_ENABLED
     pinMode(LED_BUILTIN, OUTPUT);
+    #endif
 
     /* suspend immediately the thread, until begin is not called */
     k_thread_suspend(pdm_tid);
 
     while (true) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        k_msleep(200);
+	#ifdef PDM_DEBUG_ENABLED
+	digitalWrite(LED_BUILTIN, LOW);
+	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
+	if (ret < 0) {
+		Serial.println("[ERR]: Microphone read failed");
+	}
+	digitalWrite(LED_BUILTIN, HIGH);
+	#else
+	dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
+	#endif
 
-        digitalWrite(LED_BUILTIN, LOW);
-        k_msleep(200);
+	k_mem_slab_free(&pdm_slab, buffer);
     }
 }
 
@@ -60,20 +85,16 @@ void pdm_thread(void *, void *, void *) {
     #define MIC_PWR_PRESENT
 #endif
 
+
 /* ----------------------------------------------------------------------------
  * PDM CLASS
  * ------------------------------------------------------------------------- */
 
-/* data available callback function */
-static void (*_onReceive)(void) = NULL;
 
 
-/* the PDM mic zephyr device */
-static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 
-/* --- CONSTRUCTORs --- */
+/* --- CONSTRUCTOR --- */
 PDMClass::PDMClass() : active(false) {}
-PDMClass::PDMClass(int pwrPin) : _pwrPin(pwrPin) {}
 
 /* --- DESTRUCTOR --- */
 PDMClass::~PDMClass() {}
@@ -82,65 +103,112 @@ PDMClass::~PDMClass() {}
 
 int PDMClass::begin(int channels, int sampleRate) {
 	
-	//#ifdef pippo	
+	/* --- verify digital microphone is ready --- */
 	if (!device_is_ready(dmic_dev)) {
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[WRN]: PDM " + String(dmic_dev->name) + " is not ready");
 		#endif
 		return 0;
 	}
-	//#endif
 
+	/* --- check on channels --- */
+	if(channels < 1 || channels > 2) {
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.print("[ERR]: PDM unsupported number of channels");
+		#endif
+		return 0; // Unsupported number of channels
+	}
 
+	/* --- check on sampleRate --- */
+	if( !(sampleRate == 16000 || sampleRate == 41667) ) {
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.print("[ERR]: PDM unsupported sample rate");
+		#endif
+		return 0; // Unsupported sampleRate
+	}
 
+	/* --- Set up PDM configuration --- */
 
+	stream.pcm_width = SAMPLE_BIT_WIDTH;
+	stream.mem_slab  = &pdm_slab;
+
+	cfg.io.min_pdm_clk_freq = 1000000,
+	cfg.io.max_pdm_clk_freq = 3500000,
+	cfg.io.min_pdm_clk_dc   = 40,
+	cfg.io.max_pdm_clk_dc   = 60,
+
+	cfg.streams = &stream;
+	cfg.channel.req_num_streams = 1;
+
+	cfg.channel.req_num_chan = 1;
+	cfg.channel.req_chan_map_lo = dmic_build_channel_map(0, 0, PDM_CHAN_LEFT);
+	cfg.streams[0].pcm_rate = sampleRate;
+	cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
 
 
 	if(!active) {
-		/* HANDLE PWR PIN (IF PRESENT) */
+		/* --- Send configuration to driver --- */
+		if(dmic_configure(dmic_dev, &cfg) < 0) {
+			#ifdef PDM_DEBUG_ENABLED
+			Serial.println("[ERR]: Microphone driver configuration failed");
+			#endif
+			return 0;
+		}
+		/* --- give microphone power --- */
 		#ifdef MIC_PWR_PRESENT
 		if (device_is_ready(mic_regulator)) {
 			#ifdef PDM_DEBUG_ENABLED
 			Serial.println("[LOG]: mic regulator enabled");
 			#endif
 			regulator_enable(mic_regulator);
-        	} else {
+	 	} else {
 			return 0;
 		}
 		#endif
-
-
-
-
-
-			#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: TH STARTING...");
-			#endif
+		/* --- resume receiving thread --- */
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: Microphone receiving thread starting");
+		#endif
 		k_thread_resume(pdm_tid);
+		/* --- start the microphone --- */
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: Microphone start");
+		#endif
+		if (dmic_trigger(dmic_dev, DMIC_TRIGGER_START) < 0) {
+			#ifdef PDM_DEBUG_ENABLED
+			Serial.println("[ERR]: Microphone START trigger failed");
+			#endif
+			return 0;
+		}
+		/* --- Set the status as ACTIVE --- */
 		active = true;
 	}
-
-	
-	
-
-
-	(void)channels;
-   (void)sampleRate;
-   return 1;
-
+	return 1;
 }
 
 void PDMClass::end() {
 	if(active) {
+		/* --- stop the microphone --- */
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: TH STOPPING...");
+		Serial.println("[LOG]: Microphone stop");
+		#endif
+		if (dmic_trigger(dmic_dev, DMIC_TRIGGER_STOP) < 0) {
+			#ifdef PDM_DEBUG_ENABLED
+			Serial.println("[ERR]: Microphone STOP trigger failed");
+			#endif
+		}
+		/* --- stop receiving thread --- */
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: Microphone receiving thread stopping");
 		#endif
 		k_thread_suspend(pdm_tid);
-		active = false;
+
 		/* HANDLE PWR PIN (IF PRESENT) */
 		#ifdef MIC_PWR_PRESENT
 		regulator_disable(mic_regulator);
 		#endif
+		/* --- Set the status as INACTIVE */
+		active = false;
 	}
 }
 
