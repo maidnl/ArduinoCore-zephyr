@@ -31,11 +31,52 @@ int getIntegerNonBlocking() {
   return rv;
 }
 
+short sampleBuffer[1024];
 
+// Number of audio samples read
+volatile int samplesRead;
+void on_receive() {
+
+  // Query the number of available bytes
+  int bytesAvailable = PDM.available();
+  Serial.print("** RX ** ");
+
+  Serial.print(bytesAvailable);
+  Serial.print(" ");
+  Serial.print(samplesRead);
+
+  // Read into the sample buffer
+  PDM.read(sampleBuffer, bytesAvailable);
+
+
+
+  // 16-bit, 2 bytes per sample
+  samplesRead = bytesAvailable;
+
+}
+
+void task() {
+  static bool st = false;  
+static unsigned long t = millis();
+  if(millis() -t > 1000) {
+    t = millis();
+    if(!st) {
+      digitalWrite(LED_BUILTIN,HIGH);
+      st = true;
+    } else {
+      digitalWrite(LED_BUILTIN,LOW);
+      st = false;
+      
+    }
+
+  }
+
+}
 
 void setup() {
+  pinMode(LED_BUILTIN,OUTPUT);
   //Initialize serial and wait for port to open:
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial) {
     ;  // wait for serial port to connect. Needed for native USB port only
   }
@@ -43,11 +84,15 @@ void setup() {
   Serial.println("--- SETUP ---");
   //PDM.begin(2,3);
 
+  PDM.onReceive(on_receive);
+
+
 }
 
 void loop() {
-  Serial.println("--- LOOP ---");
+  //Serial.println("--- LOOP ---");
 
+  task();
   int cmd = getIntegerNonBlocking();
 
   if(cmd == 1) {
@@ -58,7 +103,16 @@ void loop() {
     PDM.end();
   }
 
-  delay(1000);
+  // Wait for samples to be read
+  if (samplesRead) {
+
+    // Print samples to the serial monitor or plotter
+    Serial.print("samples read: ");
+    Serial.println(samplesRead);
+    // Clear the read count
+    samplesRead = 0;
+
+  }
 
 }
 
