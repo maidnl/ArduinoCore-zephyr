@@ -129,20 +129,6 @@ PDMClass::PDMClass() : active(false),  slab_init(false) {}
 
 /* --- DESTRUCTOR --- */
 PDMClass::~PDMClass() {}
-/* Add this at the top of PDM.cpp */
-#include <hal/nrf_pdm.h> // Include Nordic HAL
-
-void print_pdm_registers() {
-    Serial.println("--- PDM REGISTER DUMP ---");
-    Serial.print("ENABLE:       "); Serial.println(nrf_pdm_enable_check(NRF_PDM) ? "ENABLED" : "DISABLED");
-    Serial.print("PSEL.CLK:     "); Serial.println(NRF_PDM->PSEL.CLK, HEX);
-    Serial.print("PSEL.DIN:     "); Serial.println(NRF_PDM->PSEL.DIN, HEX);
-    Serial.print("CLK CTRL:     "); Serial.println(NRF_PDM->PDMCLKCTRL, HEX);
-    Serial.print("RATIO:        "); Serial.println(NRF_PDM->RATIO, HEX);
-    Serial.print("SAMPLE.MAXCNT:"); Serial.println(NRF_PDM->SAMPLE.MAXCNT);
-    Serial.print("SAMPLE.PTR:   "); Serial.println((uint32_t)NRF_PDM->SAMPLE.PTR, HEX);
-    Serial.println("-------------------------");
-}
 /* --- PUBLIC FUNCTIONS --- */
 
 int PDMClass::begin(int channels, int sampleRate) {
@@ -276,8 +262,6 @@ int PDMClass::begin(int channels, int sampleRate) {
 			#endif
 			return 0;
 		}
-k_msleep(10); // Wait a moment for registers to settle
-print_pdm_registers();
 		/* --- resume receiving thread --- */
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.println("[LOG]: Microphone receiving thread starting");
