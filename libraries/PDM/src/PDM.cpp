@@ -5,7 +5,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/regulator.h>
-
+#include <zephyr/drivers/gpio.h>
 /* --------------
  * CONFIGURATION 
  * ------------- */
@@ -16,23 +16,26 @@
  * Define a slab used by pdm stream
  * ------------------------------------------------------------------------- */
 
-#define SLAB_BLOCK_SIZE   DEFAULT_PDM_BUFFER_SIZE
-#define SLAB_BLOCK_NUM        2
+#define SLAB_BLOCK_SIZE       DEFAULT_PDM_BUFFER_SIZE
+#define SLAB_BLOCK_NUM        4
 #define SLAB_ALIGN            4
 //K_MEM_SLAB_DEFINE(name, slab_block_size, slab_num_blocks, slab_align)
-K_MEM_SLAB_DEFINE_STATIC(pdm_slab, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM, SLAB_ALIGN);
+//K_MEM_SLAB_DEFINE_STATIC(pdm_slab, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM, SLAB_ALIGN);
+
+struct k_mem_slab pdm_slab;
+static uint8_t __aligned(4) pdm_slab_buffer[SLAB_BLOCK_SIZE * SLAB_BLOCK_NUM];
 
 /* ---------------------------------------------------------------------------
  * Define a mutex to deal with double buffer and threads
  * --------------------------------------------------------------------------*/
 
-K_MUTEX_DEFINE(pdm_mutex);
-
+//K_MUTEX_DEFINE(pdm_mutex);
+struct k_mutex pdm_mutex;
 /* ---------------------------------------------------------------------------
  * Define a Thread to "simulate" irq behavior as expected by PDM API
  * --------------------------------------------------------------------------*/
 
-#define PDM_THREAD_STACK_SIZE  1024
+#define PDM_THREAD_STACK_SIZE  4096
 #define PDM_THREAD_PRIORITY    7
 /* PDM receiving thread */
 static void pdm_thread(void *, void *, void *);
@@ -49,23 +52,35 @@ void pdm_thread(void *, void *, void *) {
  
     void *buffer;
     uint32_t size;
+
+    static unsigned long t = millis();
  
     /* suspend immediately the thread, until begin is not called */
     k_thread_suspend(pdm_tid);
 
     while (true) {
+
+	if(millis() - t > 1000) {
+			t = millis();
+			Serial.println("thread");
+	}
+
 	Serial.println("[LOG]: ++++ Calling dmic_read ++++ ");
-	int ret = dmic_read(dmic_dev, 0, &buffer, &size, 2000);
+	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
 	#ifdef PDM_DEBUG_ENABLED
 	if (ret < 0) {
-		Serial.println("[ERR]: Microphone read failed with err = " + String(ret));
+		Serial.print("[ERR]: Microphone read failed with err = ");
+		Serial.println(ret);
 	}
 	#endif
 
 	if(pdm_db != nullptr && ret == 0) {
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone receiving " + String(size) + " bytes of data");
+		Serial.print("[LOG]: Microphone receiving ");
+		Serial.print(size);
+		Serial.println(" bytes of data");
 		#endif
+		k_mutex_lock(&pdm_mutex, K_FOREVER);
 		if (pdm_db->available() == 0) {
 			#ifdef PDM_DEBUG_ENABLED
 			if(size > pdm_db->availableForWrite()) {
@@ -75,10 +90,14 @@ void pdm_thread(void *, void *, void *) {
 			memcpy(pdm_db->data(), buffer, pdm_db->availableForWrite());
 			pdm_db->swap(pdm_db->availableForWrite());
 
+ 			k_mutex_unlock(&pdm_mutex);
 			// call receive callback if provided
 			if (_onReceive) {
 				_onReceive();
 			}
+		}
+		else {
+  			k_mutex_unlock(&pdm_mutex);
 		}
 		/* remember to free slab for next round */
 		k_mem_slab_free(&pdm_slab, buffer);
@@ -106,20 +125,56 @@ void pdm_thread(void *, void *, void *) {
  * ------------------------------------------------------------------------- */
 
 /* --- CONSTRUCTOR --- */
-PDMClass::PDMClass() : active(false) {}
+PDMClass::PDMClass() : active(false),  slab_init(false) {}
 
 /* --- DESTRUCTOR --- */
 PDMClass::~PDMClass() {}
+/* Add this at the top of PDM.cpp */
+#include <hal/nrf_pdm.h> // Include Nordic HAL
 
+void print_pdm_registers() {
+    Serial.println("--- PDM REGISTER DUMP ---");
+    Serial.print("ENABLE:       "); Serial.println(nrf_pdm_enable_check(NRF_PDM) ? "ENABLED" : "DISABLED");
+    Serial.print("PSEL.CLK:     "); Serial.println(NRF_PDM->PSEL.CLK, HEX);
+    Serial.print("PSEL.DIN:     "); Serial.println(NRF_PDM->PSEL.DIN, HEX);
+    Serial.print("CLK CTRL:     "); Serial.println(NRF_PDM->PDMCLKCTRL, HEX);
+    Serial.print("RATIO:        "); Serial.println(NRF_PDM->RATIO, HEX);
+    Serial.print("SAMPLE.MAXCNT:"); Serial.println(NRF_PDM->SAMPLE.MAXCNT);
+    Serial.print("SAMPLE.PTR:   "); Serial.println((uint32_t)NRF_PDM->SAMPLE.PTR, HEX);
+    Serial.println("-------------------------");
+}
 /* --- PUBLIC FUNCTIONS --- */
 
 int PDMClass::begin(int channels, int sampleRate) {
 
-	if(dmic_dev == NULL) {
-		Serial.println("MICROPHONE UNAVAILABLE!!!!");
-	}
-	Serial.println("Address " + String((uint32_t)dmic_dev));
+	#ifdef PDM_DEBUG_ENABLED
+	Serial.println("[LOG]: Buffer Size: " + String(SLAB_BLOCK_SIZE));
+        Serial.println("Bit Width: " + String(SAMPLE_BIT_WIDTH));
+	#endif
 
+	/* --- SLAB INITIALIZATION --- */
+	if(!slab_init) {
+		int slab_err = k_mem_slab_init(&pdm_slab, pdm_slab_buffer, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM);
+    		if (slab_err != 0) {
+			#ifdef PDM_DEBUG_ENABLED
+        		Serial.println("[ERR]: Slab init failed with code: " + String(slab_err));
+        		#endif
+			return 0;
+    		}
+		/* --- DEBUG: Test Slab Allocation --- */
+		#ifdef PDM_DEBUG_ENABLED
+		void* test_block;
+		if (k_mem_slab_alloc(&pdm_slab, &test_block, K_NO_WAIT) == 0) {
+			Serial.println("[DIAG]: Slab allocation SUCCESS. Block Addr: " + String((uint32_t)test_block, HEX));
+			k_mem_slab_free(&pdm_slab, test_block); // Free it immediately
+		} else {
+			Serial.println("[DIAG]: Slab allocation FAILED! (CRITICAL)");
+			return 0;
+		}
+		#endif
+		k_mutex_init(&pdm_mutex);
+		slab_init = true;
+	}
 	/* assing the pointer used by the thread to the "internal" double buffer*/
 	pdm_db = &db;
 	
@@ -152,10 +207,10 @@ int PDMClass::begin(int channels, int sampleRate) {
 	stream.pcm_width = SAMPLE_BIT_WIDTH;
 	stream.mem_slab  = &pdm_slab;
 
-	cfg.io.min_pdm_clk_freq = 1000000,
-	cfg.io.max_pdm_clk_freq = 3500000,
-	cfg.io.min_pdm_clk_dc   = 40,
-	cfg.io.max_pdm_clk_dc   = 60,
+	cfg.io.min_pdm_clk_freq = 1000000;
+	cfg.io.max_pdm_clk_freq = 1100000;
+	cfg.io.min_pdm_clk_dc   = 40;
+	cfg.io.max_pdm_clk_dc   = 60;
 
 	cfg.streams = &stream;
 	cfg.channel.req_num_streams = 1;
@@ -175,17 +230,38 @@ int PDMClass::begin(int channels, int sampleRate) {
 			return 0;
 		}
 
-		pinMode(29, OUTPUT);
-		digitalWrite(29, HIGH);
-
-
 		/* --- give microphone power --- */
-		#ifdef MIC_PWR_PRESENT
+		/* --- give microphone power (MANUAL OVERRIDE) --- */
+		const struct device *gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
+
+		if (device_is_ready(gpio0_dev)) {
+		// Force P0.17 HIGH (Standard Mic Power Pin for Nano 33 BLE Sense)
+		// Note: If you are on a very specific custom revision, verify if it's pin 17.
+		int ret = gpio_pin_configure(gpio0_dev, 17, GPIO_OUTPUT_ACTIVE);
+		if (ret < 0) {
+		Serial.println("[ERR]: Failed to force Mic Power Pin 17");
+		} else {
+		Serial.println("[LOG]: Forced Mic Power Pin 17 HIGH");
+		k_msleep(20); // Vital delay for Mic startup
+		}
+		} else {
+		Serial.println("[ERR]: GPIO0 Device not ready");
+		}
+
+		/* Old regulator code - commented out for debugging
+#ifdef MIC_PWR_PRESENT
+		if (device_is_ready(mic_regulator)) {
+		regulator_enable(mic_regulator); 
+		} 
+#endif
+		*/
+		#ifdef MIC_PWR_PRESENT_ERASED
 		if (device_is_ready(mic_regulator)) {
 			#ifdef PDM_DEBUG_ENABLED
 			Serial.println("[LOG]: mic regulator enabled");
 			#endif
 			regulator_enable(mic_regulator);
+			k_msleep(15);
 	 	} else {
 			return 0;
 		}
@@ -200,6 +276,8 @@ int PDMClass::begin(int channels, int sampleRate) {
 			#endif
 			return 0;
 		}
+k_msleep(10); // Wait a moment for registers to settle
+print_pdm_registers();
 		/* --- resume receiving thread --- */
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.println("[LOG]: Microphone receiving thread starting");
@@ -242,6 +320,8 @@ int PDMClass::available() {
   k_mutex_lock(&pdm_mutex, K_FOREVER);
   size_t avail = db.available();
   k_mutex_unlock(&pdm_mutex);
+  Serial.println("avail");
+
   return (int)avail;
 }
 
@@ -250,6 +330,7 @@ int PDMClass::read(void* buffer, size_t size) {
   k_mutex_lock(&pdm_mutex, K_FOREVER);
   int read = db.read(buffer, size);
   k_mutex_unlock(&pdm_mutex);
+  Serial.println("read");
   return read;
 }
 
