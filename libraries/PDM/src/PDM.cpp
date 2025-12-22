@@ -1,6 +1,7 @@
 #include "PDM.h"
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/regulator.h>
@@ -37,6 +38,7 @@ K_MUTEX_DEFINE(pdm_mutex);
 static void pdm_thread(void *, void *, void *);
 /* data available callback function */
 static void (*_onReceive)(void) = NULL;
+static PDMDoubleBuffer *pdm_db = nullptr;
 /* the PDM mic zephyr device */
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 
@@ -48,26 +50,39 @@ void pdm_thread(void *, void *, void *) {
     void *buffer;
     uint32_t size;
  
-    #ifdef PDM_DEBUG_ENABLED
-    pinMode(LED_BUILTIN, OUTPUT);
-    #endif
-
     /* suspend immediately the thread, until begin is not called */
     k_thread_suspend(pdm_tid);
 
     while (true) {
+	Serial.println("[LOG]: ++++ Calling dmic_read ++++ ");
+	int ret = dmic_read(dmic_dev, 0, &buffer, &size, 2000);
 	#ifdef PDM_DEBUG_ENABLED
-	digitalWrite(LED_BUILTIN, LOW);
-	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
 	if (ret < 0) {
-		Serial.println("[ERR]: Microphone read failed");
+		Serial.println("[ERR]: Microphone read failed with err = " + String(ret));
 	}
-	digitalWrite(LED_BUILTIN, HIGH);
-	#else
-	dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
 	#endif
 
-	k_mem_slab_free(&pdm_slab, buffer);
+	if(pdm_db != nullptr && ret == 0) {
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: Microphone receiving " + String(size) + " bytes of data");
+		#endif
+		if (pdm_db->available() == 0) {
+			#ifdef PDM_DEBUG_ENABLED
+			if(size > pdm_db->availableForWrite()) {
+				Serial.println("[WRG]: Microphone possible lose of data");
+			}
+			#endif
+			memcpy(pdm_db->data(), buffer, pdm_db->availableForWrite());
+			pdm_db->swap(pdm_db->availableForWrite());
+
+			// call receive callback if provided
+			if (_onReceive) {
+				_onReceive();
+			}
+		}
+		/* remember to free slab for next round */
+		k_mem_slab_free(&pdm_slab, buffer);
+	}
     }
 }
 
@@ -90,9 +105,6 @@ void pdm_thread(void *, void *, void *) {
  * PDM CLASS
  * ------------------------------------------------------------------------- */
 
-
-
-
 /* --- CONSTRUCTOR --- */
 PDMClass::PDMClass() : active(false) {}
 
@@ -102,6 +114,14 @@ PDMClass::~PDMClass() {}
 /* --- PUBLIC FUNCTIONS --- */
 
 int PDMClass::begin(int channels, int sampleRate) {
+
+	if(dmic_dev == NULL) {
+		Serial.println("MICROPHONE UNAVAILABLE!!!!");
+	}
+	Serial.println("Address " + String((uint32_t)dmic_dev));
+
+	/* assing the pointer used by the thread to the "internal" double buffer*/
+	pdm_db = &db;
 	
 	/* --- verify digital microphone is ready --- */
 	if (!device_is_ready(dmic_dev)) {
@@ -154,6 +174,11 @@ int PDMClass::begin(int channels, int sampleRate) {
 			#endif
 			return 0;
 		}
+
+		pinMode(29, OUTPUT);
+		digitalWrite(29, HIGH);
+
+
 		/* --- give microphone power --- */
 		#ifdef MIC_PWR_PRESENT
 		if (device_is_ready(mic_regulator)) {
@@ -165,11 +190,6 @@ int PDMClass::begin(int channels, int sampleRate) {
 			return 0;
 		}
 		#endif
-		/* --- resume receiving thread --- */
-		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone receiving thread starting");
-		#endif
-		k_thread_resume(pdm_tid);
 		/* --- start the microphone --- */
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.println("[LOG]: Microphone start");
@@ -180,6 +200,11 @@ int PDMClass::begin(int channels, int sampleRate) {
 			#endif
 			return 0;
 		}
+		/* --- resume receiving thread --- */
+		#ifdef PDM_DEBUG_ENABLED
+		Serial.println("[LOG]: Microphone receiving thread starting");
+		#endif
+		k_thread_resume(pdm_tid);
 		/* --- Set the status as ACTIVE --- */
 		active = true;
 	}
