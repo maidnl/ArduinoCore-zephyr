@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <zephyr/kernel.h> // Include native Zephyr kernel
 
-#define DEFAULT_PDM_BUFFER_SIZE 512
+#define DEFAULT_PDM_BUFFER_SIZE 2048
 
 class PDMDoubleBuffer
 {
