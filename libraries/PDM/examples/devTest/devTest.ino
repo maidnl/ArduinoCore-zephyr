@@ -52,7 +52,7 @@ void loop() {
 
   if(cmd == 1) {
     Serial.println("ON");
-    PDM.begin(2,3);
+    PDM.begin(1,16000);
   } else if(cmd == 0) {
     Serial.println("OFF");
     PDM.end();
