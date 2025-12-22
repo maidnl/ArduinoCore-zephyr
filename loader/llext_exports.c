@@ -328,3 +328,4 @@ FORCE_EXPORT_SYM(regulator_disable)
 
 
 EXPORT_SYMBOL(k_mem_slab_free);
+EXPORT_SYMBOL(k_mem_slab_init);
