@@ -325,3 +325,6 @@ FORCE_EXPORT_SYM(fs_unregister);
 FORCE_EXPORT_SYM(regulator_enable)
 FORCE_EXPORT_SYM(regulator_disable)
 #endif
+
+
+EXPORT_SYMBOL(k_mem_slab_free);
