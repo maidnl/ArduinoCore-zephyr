@@ -10,7 +10,12 @@
 /* ---- CONFIGURATION ----- */
 
 /* enable disable library debug */
-#define PDM_DEBUG_ENABLED
+//#define PDM_DEBUG_ENABLED
+/* NOTE: quite obvious to note that enabling the debug flag make any sample 
+ * obtained from the microphone via serial "dirty" because the debug log is
+ * inserted into the stream obtained from the microphone. So enable it only if 
+ * the data from the mic are unimportant */
+
 /* SLAB configuration */
 #define SLAB_BLOCK_SIZE       DEFAULT_PDM_BUFFER_SIZE
 #define SLAB_BLOCK_NUM        4
