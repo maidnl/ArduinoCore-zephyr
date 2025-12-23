@@ -132,6 +132,10 @@ PDMClass::~PDMClass() {}
 
 int PDMClass::begin(int channels, int sampleRate) {
 
+	/* 
+	 * +++++++++ INITIALISATIONs and CHECKs +++++++++++++
+	 */
+
 	/* --- SLAB and MUTEX INITIALIZATION --- */
 	/* To be performed just once */
 	if(!pdm_init) {
@@ -140,26 +144,24 @@ int PDMClass::begin(int channels, int sampleRate) {
 			#ifdef PDM_DEBUG_ENABLED
         		Serial.println("[ERR]: slab mic initialization failed with code: " + String(err));
         		#endif
-			return 0;
+			return 0; /* failed slab initialization */
     		}
 		err = k_mutex_init(&pdm_mutex);
     		if (err != 0) {
 			#ifdef PDM_DEBUG_ENABLED
         		Serial.println("[ERR]: mutex mic initialization failed with code: " + String(err));
         		#endif
-			return 0;
+			return 0; /* failed mutex initialization */
     		}
 		pdm_init = true;
 	}
-	/* assing the pointer used by the thread to the "internal" double buffer*/
-	pdm_db = &db;
 	
 	/* --- verify digital microphone is ready --- */
 	if (!device_is_ready(dmic_dev)) {
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[WRN]: PDM " + String(dmic_dev->name) + " is not ready");
 		#endif
-		return 0;
+		return 0; /* mic device not ready */
 	}
 
 	/* --- check on channels --- */
@@ -167,7 +169,7 @@ int PDMClass::begin(int channels, int sampleRate) {
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[ERR]: PDM unsupported number of channels");
 		#endif
-		return 0; // Unsupported number of channels
+		return 0; /* wrong number of channels */
 	}
 
 	/* --- check on sampleRate --- */
@@ -175,8 +177,11 @@ int PDMClass::begin(int channels, int sampleRate) {
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[ERR]: PDM unsupported sample rate");
 		#endif
-		return 0; // Unsupported sampleRate
+		return 0; /* sample rate not supported */
 	}
+
+	/* assing the pointer used by the thread to the "internal" double buffer*/
+	pdm_db = &db;
 
 	/* --- Set up PDM configuration --- */
 
@@ -224,13 +229,6 @@ int PDMClass::begin(int channels, int sampleRate) {
 		Serial.println("[ERR]: GPIO0 Device not ready");
 		}
 
-		/* Old regulator code - commented out for debugging
-#ifdef MIC_PWR_PRESENT
-		if (device_is_ready(mic_regulator)) {
-		regulator_enable(mic_regulator); 
-		} 
-#endif
-		*/
 		#ifdef MIC_PWR_PRESENT_ERASED
 		if (device_is_ready(mic_regulator)) {
 			#ifdef PDM_DEBUG_ENABLED
