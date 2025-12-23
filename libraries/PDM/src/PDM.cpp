@@ -52,18 +52,10 @@ void pdm_thread(void *, void *, void *) {
  
     void *buffer;
     uint32_t size;
-
-    static unsigned long t = millis();
  
-    /* suspend immediately the thread, until begin is not called */
     k_thread_suspend(pdm_tid);
 
     while (true) {
-
-	if(millis() - t > 1000) {
-			t = millis();
-			Serial.println("thread");
-	}
 
 	Serial.println("[LOG]: ++++ Calling dmic_read ++++ ");
 	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
