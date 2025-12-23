@@ -31,7 +31,7 @@ public:
 
 
 private:
-  bool slab_init;
+  bool pdm_init;
   bool active;
   PDMDoubleBuffer db;
   struct pcm_stream_cfg stream;

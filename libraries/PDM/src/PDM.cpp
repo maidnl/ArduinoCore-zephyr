@@ -99,7 +99,7 @@ void pdm_thread(void *, void *, void *) {
   			k_mutex_unlock(&pdm_mutex);
 		}
 	}
-	/* remember to free slab for next round */
+	/* always free slab for next round */
 	k_mem_slab_free(&pdm_slab, buffer);
     }
 }
@@ -124,7 +124,7 @@ void pdm_thread(void *, void *, void *) {
  * ------------------------------------------------------------------------- */
 
 /* --- CONSTRUCTOR --- */
-PDMClass::PDMClass() : active(false),  slab_init(false) {}
+PDMClass::PDMClass() : active(false),  pdm_init(false) {}
 
 /* --- DESTRUCTOR --- */
 PDMClass::~PDMClass() {}
@@ -132,33 +132,24 @@ PDMClass::~PDMClass() {}
 
 int PDMClass::begin(int channels, int sampleRate) {
 
-	#ifdef PDM_DEBUG_ENABLED
-	Serial.println("[LOG]: Buffer Size: " + String(SLAB_BLOCK_SIZE));
-        Serial.println("Bit Width: " + String(SAMPLE_BIT_WIDTH));
-	#endif
-
-	/* --- SLAB INITIALIZATION --- */
-	if(!slab_init) {
-		int slab_err = k_mem_slab_init(&pdm_slab, pdm_slab_buffer, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM);
-    		if (slab_err != 0) {
+	/* --- SLAB and MUTEX INITIALIZATION --- */
+	/* To be performed just once */
+	if(!pdm_init) {
+		int err = k_mem_slab_init(&pdm_slab, pdm_slab_buffer, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM);
+    		if (err != 0) {
 			#ifdef PDM_DEBUG_ENABLED
-        		Serial.println("[ERR]: Slab init failed with code: " + String(slab_err));
+        		Serial.println("[ERR]: slab mic initialization failed with code: " + String(err));
         		#endif
 			return 0;
     		}
-		/* --- DEBUG: Test Slab Allocation --- */
-		#ifdef PDM_DEBUG_ENABLED
-		void* test_block;
-		if (k_mem_slab_alloc(&pdm_slab, &test_block, K_NO_WAIT) == 0) {
-			Serial.println("[DIAG]: Slab allocation SUCCESS. Block Addr: " + String((uint32_t)test_block, HEX));
-			k_mem_slab_free(&pdm_slab, test_block); // Free it immediately
-		} else {
-			Serial.println("[DIAG]: Slab allocation FAILED! (CRITICAL)");
+		err = k_mutex_init(&pdm_mutex);
+    		if (err != 0) {
+			#ifdef PDM_DEBUG_ENABLED
+        		Serial.println("[ERR]: mutex mic initialization failed with code: " + String(err));
+        		#endif
 			return 0;
-		}
-		#endif
-		k_mutex_init(&pdm_mutex);
-		slab_init = true;
+    		}
+		pdm_init = true;
 	}
 	/* assing the pointer used by the thread to the "internal" double buffer*/
 	pdm_db = &db;
