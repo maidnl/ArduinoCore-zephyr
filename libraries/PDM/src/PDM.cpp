@@ -180,7 +180,7 @@ int PDMClass::begin(int channels, int sampleRate) {
 		cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
 	} else {
 		/* 2 channels */
-		/* [TODO]: Configuration not verified on real hw*/
+		/* [TODO]: Configuration not verified on real hw */
 		cfg.channel.req_num_chan = 2;
 		cfg.channel.req_chan_map_lo =
 				dmic_build_channel_map(0, 0, PDM_CHAN_LEFT) |
