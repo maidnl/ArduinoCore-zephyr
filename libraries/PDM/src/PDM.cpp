@@ -57,11 +57,15 @@ void pdm_thread(void *, void *, void *) {
 
     while (true) {
 
-	Serial.println("[LOG]: ++++ Calling dmic_read ++++ ");
+	#ifdef PDM_DEBUG_ENABLED
+	Serial.println("[LOG]: Call -> dmic_read");
+	#endif
+	
 	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
+	
 	#ifdef PDM_DEBUG_ENABLED
 	if (ret < 0) {
-		Serial.print("[ERR]: Microphone read failed with err = ");
+		Serial.print("[ERR]: dmic_read failed with err = ");
 		Serial.println(ret);
 	}
 	#endif
