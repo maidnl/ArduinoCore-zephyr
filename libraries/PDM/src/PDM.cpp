@@ -166,7 +166,7 @@ int PDMClass::begin(int channels, int sampleRate) {
 	stream.mem_slab  = &pdm_slab;
 
 	cfg.io.min_pdm_clk_freq = 1000000;
-	cfg.io.max_pdm_clk_freq = 1100000;
+	cfg.io.max_pdm_clk_freq = 3500000;
 	cfg.io.min_pdm_clk_dc   = 40;
 	cfg.io.max_pdm_clk_dc   = 60;
 
