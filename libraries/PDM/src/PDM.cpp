@@ -73,22 +73,24 @@ void pdm_thread(void *, void *, void *) {
 
 	if(pdm_db != nullptr) {
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.print("[LOG]: Microphone receiving ");
+		Serial.print("[LOG]: receiving ");
 		Serial.print(size);
-		Serial.println(" bytes of data");
+		Serial.println(" bytes from mic");
 		#endif
+
 		k_mutex_lock(&pdm_mutex, K_FOREVER);
+
 		if (pdm_db->available() == 0) {
 			#ifdef PDM_DEBUG_ENABLED
 			if(size > pdm_db->availableForWrite()) {
-				Serial.println("[WRG]: Microphone possible lose of data");
+				Serial.println("[WRG]: mic data loss!");
 			}
 			#endif
 			memcpy(pdm_db->data(), buffer, pdm_db->availableForWrite());
 			pdm_db->swap(pdm_db->availableForWrite());
 
  			k_mutex_unlock(&pdm_mutex);
-			// call receive callback if provided
+			/* notify the user data are ready */
 			if (_onReceive) {
 				_onReceive();
 			}
