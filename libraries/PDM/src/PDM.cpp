@@ -96,9 +96,9 @@ void pdm_thread(void *, void *, void *) {
 		else {
   			k_mutex_unlock(&pdm_mutex);
 		}
-		/* remember to free slab for next round */
-		k_mem_slab_free(&pdm_slab, buffer);
 	}
+	/* remember to free slab for next round */
+	k_mem_slab_free(&pdm_slab, buffer);
     }
 }
 
