@@ -63,14 +63,15 @@ void pdm_thread(void *, void *, void *) {
 	
 	int ret = dmic_read(dmic_dev, 0, &buffer, &size, SYS_FOREVER_MS);
 	
-	#ifdef PDM_DEBUG_ENABLED
 	if (ret < 0) {
+		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[ERR]: dmic_read failed with err = ");
 		Serial.println(ret);
+		#endif
+		continue;
 	}
-	#endif
 
-	if(pdm_db != nullptr && ret == 0) {
+	if(pdm_db != nullptr) {
 		#ifdef PDM_DEBUG_ENABLED
 		Serial.print("[LOG]: Microphone receiving ");
 		Serial.print(size);
