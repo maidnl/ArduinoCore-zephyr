@@ -6,44 +6,39 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/regulator.h>
 #include <zephyr/drivers/gpio.h>
-/* --------------
- * CONFIGURATION 
- * ------------- */
 
+/* ---- CONFIGURATION ----- */
+
+/* enable disable library debug */
 #define PDM_DEBUG_ENABLED
-
-/* --------------------------------------------------------------------------
- * Define a slab used by pdm stream
- * ------------------------------------------------------------------------- */
-
+/* SLAB configuration */
 #define SLAB_BLOCK_SIZE       DEFAULT_PDM_BUFFER_SIZE
 #define SLAB_BLOCK_NUM        4
 #define SLAB_ALIGN            4
-//K_MEM_SLAB_DEFINE(name, slab_block_size, slab_num_blocks, slab_align)
-//K_MEM_SLAB_DEFINE_STATIC(pdm_slab, SLAB_BLOCK_SIZE, SLAB_BLOCK_NUM, SLAB_ALIGN);
-
-struct k_mem_slab pdm_slab;
-static uint8_t __aligned(4) pdm_slab_buffer[SLAB_BLOCK_SIZE * SLAB_BLOCK_NUM];
-
-/* ---------------------------------------------------------------------------
- * Define a mutex to deal with double buffer and threads
- * --------------------------------------------------------------------------*/
-
-//K_MUTEX_DEFINE(pdm_mutex);
-struct k_mutex pdm_mutex;
-/* ---------------------------------------------------------------------------
- * Define a Thread to "simulate" irq behavior as expected by PDM API
- * --------------------------------------------------------------------------*/
-
+/* THREAD configuration */
 #define PDM_THREAD_STACK_SIZE  4096
 #define PDM_THREAD_PRIORITY    7
-/* PDM receiving thread */
+/* mic power regulator configuration */
+/* DT_NODELABEL(mic_pwr) gets the node ID.
+ * DT_NODE_HAS_STATUS(..., okay) returns 1 if status is "okay", 0 otherwise. */
+#define MIC_PWR_NODE DT_NODELABEL(mic_pwr)
+#if DT_NODE_EXISTS(MIC_PWR_NODE) && DT_NODE_HAS_STATUS(MIC_PWR_NODE, okay)
+    static const struct device *mic_regulator = DEVICE_DT_GET(MIC_PWR_NODE);
+    #define MIC_PWR_PRESENT
+#endif
+
+/* ---- static local variables ---- */
+
+static struct k_mem_slab pdm_slab;
+static uint8_t __aligned(4) pdm_slab_buffer[SLAB_BLOCK_SIZE * SLAB_BLOCK_NUM];
+static struct k_mutex pdm_mutex;
 static void pdm_thread(void *, void *, void *);
-/* data available callback function */
 static void (*_onReceive)(void) = NULL;
 static PDMDoubleBuffer *pdm_db = nullptr;
 /* the PDM mic zephyr device */
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
+
+/* ---- MIC RECEIVING THREAD ---- */
 
 K_THREAD_DEFINE(pdm_tid, PDM_THREAD_STACK_SIZE, pdm_thread, NULL, NULL, NULL,
                 PDM_THREAD_PRIORITY, 0, 0);
@@ -104,38 +99,19 @@ void pdm_thread(void *, void *, void *) {
     }
 }
 
-/* ----------------------------------------------------------------------------
- * Define MACROS to understand if a power regulator is defined in DT for the
- * microphone
- * ------------------------------------------------------------------------- */
+/* ---- PDM CLASS ---- */
 
-/* DT_NODELABEL(mic_pwr) gets the node ID.
- * DT_NODE_HAS_STATUS(..., okay) returns 1 if status is "okay", 0 otherwise. */
-#define MIC_PWR_NODE DT_NODELABEL(mic_pwr)
-
-#if DT_NODE_EXISTS(MIC_PWR_NODE) && DT_NODE_HAS_STATUS(MIC_PWR_NODE, okay)
-    static const struct device *mic_regulator = DEVICE_DT_GET(MIC_PWR_NODE);
-    #define MIC_PWR_PRESENT
-#endif
-
-
-/* ----------------------------------------------------------------------------
- * PDM CLASS
- * ------------------------------------------------------------------------- */
-
-/* --- CONSTRUCTOR --- */
+/* ______________________________________________________________constructor */
 PDMClass::PDMClass() : active(false),  pdm_init(false) {}
 
-/* --- DESTRUCTOR --- */
+/* _______________________________________________________________destructor */
 PDMClass::~PDMClass() {}
-/* --- PUBLIC FUNCTIONS --- */
 
+/* __________________________________________________________________begin() */
 int PDMClass::begin(int channels, int sampleRate) {
-
 	/* 
 	 * +++++++++ INITIALISATIONs and CHECKs +++++++++++++
 	 */
-
 	/* --- SLAB and MUTEX INITIALIZATION --- */
 	/* To be performed just once */
 	if(!pdm_init) {
@@ -155,7 +131,6 @@ int PDMClass::begin(int channels, int sampleRate) {
     		}
 		pdm_init = true;
 	}
-	
 	/* --- verify digital microphone is ready --- */
 	if (!device_is_ready(dmic_dev)) {
 		#ifdef PDM_DEBUG_ENABLED
@@ -163,7 +138,6 @@ int PDMClass::begin(int channels, int sampleRate) {
 		#endif
 		return 0; /* mic device not ready */
 	}
-
 	/* --- check on channels --- */
 	if(channels < 1 || channels > 2) {
 		#ifdef PDM_DEBUG_ENABLED
@@ -171,7 +145,6 @@ int PDMClass::begin(int channels, int sampleRate) {
 		#endif
 		return 0; /* wrong number of channels */
 	}
-
 	/* --- check on sampleRate --- */
 	if( !(sampleRate == 16000 || sampleRate == 41667) ) {
 		#ifdef PDM_DEBUG_ENABLED
@@ -179,12 +152,11 @@ int PDMClass::begin(int channels, int sampleRate) {
 		#endif
 		return 0; /* sample rate not supported */
 	}
-
 	/* assing the pointer used by the thread to the "internal" double buffer*/
 	pdm_db = &db;
-
-	/* --- Set up PDM configuration --- */
-
+	/*
+	 * +++++++++++ Set up PDM configuration +++++++++++++++
+	 */
 	stream.pcm_width = SAMPLE_BIT_WIDTH;
 	stream.mem_slab  = &pdm_slab;
 
@@ -201,6 +173,9 @@ int PDMClass::begin(int channels, int sampleRate) {
 	cfg.streams[0].pcm_rate = sampleRate;
 	cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
 
+	/*
+	 * +++++++++++ Start MIC listening +++++++++++++++
+	 */
 
 	if(!active) {
 		/* --- Send mic configuration to driver --- */
@@ -217,26 +192,31 @@ int PDMClass::begin(int channels, int sampleRate) {
 			Serial.println("[LOG]: mic regulator enabled");
 			#endif
 			regulator_enable(mic_regulator);
+			/* give little time regulator */
 			k_msleep(15);
 	 	} else {
+			/* [TODO]:
+			 * - does the mic do not use regulator? 
+			 * - does the mic is always powered up?*/
 			return 0;
 		}
 		#endif
 		/* --- start the microphone --- */
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone start");
+		Serial.println("[LOG]: mic start listening");
 		#endif
 		if (dmic_trigger(dmic_dev, DMIC_TRIGGER_START) < 0) {
 			#ifdef PDM_DEBUG_ENABLED
-			Serial.println("[ERR]: Microphone START trigger failed");
+			Serial.println("[ERR]: mic START trigger failed");
 			#endif
 			return 0;
 		}
 		/* --- resume receiving thread --- */
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone receiving thread starting");
+		Serial.println("[LOG]: mic rx thread starting");
 		#endif
 		k_thread_resume(pdm_tid);
+
 		/* --- Set the status as ACTIVE --- */
 		active = true;
 	}
@@ -247,23 +227,24 @@ void PDMClass::end() {
 	if(active) {
 		/* --- stop the microphone --- */
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone stop");
+		Serial.println("[LOG]: mic stop listening");
 		#endif
 		if (dmic_trigger(dmic_dev, DMIC_TRIGGER_STOP) < 0) {
 			#ifdef PDM_DEBUG_ENABLED
-			Serial.println("[ERR]: Microphone STOP trigger failed");
+			Serial.println("[ERR]: mic STOP trigger failed");
 			#endif
 		}
 		/* --- stop receiving thread --- */
 		#ifdef PDM_DEBUG_ENABLED
-		Serial.println("[LOG]: Microphone receiving thread stopping");
+		Serial.println("[LOG]: mic rx thread suspended");
 		#endif
 		k_thread_suspend(pdm_tid);
 
-		/* HANDLE PWR PIN (IF PRESENT) */
+		/* --- shut down mic regulator --- */
 		#ifdef MIC_PWR_PRESENT
 		regulator_disable(mic_regulator);
 		#endif
+
 		/* --- Set the status as INACTIVE */
 		active = false;
 	}
@@ -274,8 +255,6 @@ int PDMClass::available() {
   k_mutex_lock(&pdm_mutex, K_FOREVER);
   size_t avail = db.available();
   k_mutex_unlock(&pdm_mutex);
-  Serial.println("avail");
-
   return (int)avail;
 }
 
@@ -284,19 +263,23 @@ int PDMClass::read(void* buffer, size_t size) {
   k_mutex_lock(&pdm_mutex, K_FOREVER);
   int read = db.read(buffer, size);
   k_mutex_unlock(&pdm_mutex);
-  Serial.println("read");
   return read;
 }
 
+/* ______________________________________________________________onReceive() */
 void PDMClass::onReceive(void(* func)(void)) {
   _onReceive = func;
 }
 
+/* ________________________________________________________________setGain() */
 void PDMClass::setGain(int gain) {
    (void)gain;
 }
 
+/* __________________________________________________________setBufferSize() */
 size_t PDMClass::getBufferSize() {
-	return 1;
+	return db.getSize();
 
 }
+
+PDMClass PDM;

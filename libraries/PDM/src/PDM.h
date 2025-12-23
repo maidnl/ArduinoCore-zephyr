@@ -42,8 +42,7 @@ private:
 
 typedef arduino::PDMClass PDMClass;
 
-//extern PDMClass PDM;
-
+extern PDMClass PDM;
 
 #endif // ARDUINO_ZEPHYR_PDM_H
 

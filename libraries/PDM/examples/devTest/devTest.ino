@@ -43,7 +43,7 @@ void on_receive() {
 
   Serial.print(bytesAvailable);
   Serial.print(" ");
-  Serial.print(samplesRead);
+  Serial.println(samplesRead);
 
   // Read into the sample buffer
   PDM.read(sampleBuffer, bytesAvailable);
