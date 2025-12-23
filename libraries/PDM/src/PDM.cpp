@@ -21,7 +21,7 @@
 #define SLAB_BLOCK_NUM        4
 #define SLAB_ALIGN            4
 /* THREAD configuration */
-#define PDM_THREAD_STACK_SIZE  4096
+#define PDM_THREAD_STACK_SIZE  1024
 #define PDM_THREAD_PRIORITY    7
 /* mic power regulator configuration */
 /* DT_NODELABEL(mic_pwr) gets the node ID.
