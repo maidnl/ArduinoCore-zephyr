@@ -276,9 +276,14 @@ void PDMClass::onReceive(void(* func)(void)) {
   _onReceive = func;
 }
 
+#include <hal/nrf_pdm.h>
 /* ________________________________________________________________setGain() */
 void PDMClass::setGain(int gain) {
-   (void)gain;
+	/* at the present the zephyr dmic_nrfx_pdm.c does not support the set
+	 * of the gain (gain_l and gain_r are defined in the nrf HAL but not
+	 * used by the driver which use a default value) */
+	NRF_PDM->GAINR = gain;
+	NRF_PDM->GAINL = gain;
 }
 
 /* __________________________________________________________setBufferSize() */
