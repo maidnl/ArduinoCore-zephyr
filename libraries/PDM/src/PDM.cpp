@@ -203,33 +203,15 @@ int PDMClass::begin(int channels, int sampleRate) {
 
 
 	if(!active) {
-		/* --- Send configuration to driver --- */
+		/* --- Send mic configuration to driver --- */
 		if(dmic_configure(dmic_dev, &cfg) < 0) {
 			#ifdef PDM_DEBUG_ENABLED
-			Serial.println("[ERR]: Microphone driver configuration failed");
+			Serial.println("[ERR]: mic configuration failed");
 			#endif
 			return 0;
 		}
-
 		/* --- give microphone power --- */
-		/* --- give microphone power (MANUAL OVERRIDE) --- */
-		const struct device *gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
-
-		if (device_is_ready(gpio0_dev)) {
-		// Force P0.17 HIGH (Standard Mic Power Pin for Nano 33 BLE Sense)
-		// Note: If you are on a very specific custom revision, verify if it's pin 17.
-		int ret = gpio_pin_configure(gpio0_dev, 17, GPIO_OUTPUT_ACTIVE);
-		if (ret < 0) {
-		Serial.println("[ERR]: Failed to force Mic Power Pin 17");
-		} else {
-		Serial.println("[LOG]: Forced Mic Power Pin 17 HIGH");
-		k_msleep(20); // Vital delay for Mic startup
-		}
-		} else {
-		Serial.println("[ERR]: GPIO0 Device not ready");
-		}
-
-		#ifdef MIC_PWR_PRESENT_ERASED
+		#ifdef MIC_PWR_PRESENT
 		if (device_is_ready(mic_regulator)) {
 			#ifdef PDM_DEBUG_ENABLED
 			Serial.println("[LOG]: mic regulator enabled");
