@@ -172,11 +172,22 @@ int PDMClass::begin(int channels, int sampleRate) {
 
 	cfg.streams = &stream;
 	cfg.channel.req_num_streams = 1;
-
-	cfg.channel.req_num_chan = 1;
-	cfg.channel.req_chan_map_lo = dmic_build_channel_map(0, 0, PDM_CHAN_LEFT);
-	cfg.streams[0].pcm_rate = sampleRate;
-	cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
+	
+	if(channels == 1) {
+		cfg.channel.req_num_chan = 1;
+		cfg.channel.req_chan_map_lo = dmic_build_channel_map(0, 0, PDM_CHAN_LEFT);
+		cfg.streams[0].pcm_rate = sampleRate;
+		cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
+	} else {
+		/* 2 channels */
+		/* [TODO]: Configuration not verified on real hw*/
+		cfg.channel.req_num_chan = 2;
+		cfg.channel.req_chan_map_lo =
+				dmic_build_channel_map(0, 0, PDM_CHAN_LEFT) |
+				dmic_build_channel_map(1, 0, PDM_CHAN_RIGHT);
+		cfg.streams[0].pcm_rate = sampleRate;
+		cfg.streams[0].block_size = SLAB_BLOCK_SIZE;
+	}
 
 	/*
 	 * +++++++++++ Start MIC listening +++++++++++++++
