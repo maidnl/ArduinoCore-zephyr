@@ -72,6 +72,7 @@
 };
 
 &flash0 {
+	bank2-flash-size = <1024>;
 	partitions {
 		user_sketch: partition@e0000 {
 			reg = <0x000E0000 0x00040000>;
