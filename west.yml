@@ -17,11 +17,13 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: bcmi
+      url-base: git@github.com:bcmi-labs
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.3.0+
+      remote: bcmi
+      revision: h5f5
       import:
         name-allowlist:
           - cmsis
@@ -47,3 +49,8 @@ manifest:
       path: modules/lib/ArduinoCore-API
       revision: master
       url: https://github.com/arduino/ArduinoCore-API
+
+    - name: cannectivity
+      path: modules/lib/cannectivity
+      url: https://github.com/CANnectivity/cannectivity.git
+      revision: main
