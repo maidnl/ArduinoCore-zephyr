@@ -181,7 +181,7 @@ SYS_INIT(maybe_flash_bootloader, POST_KERNEL, CONFIG_FILE_SYSTEM_INIT_PRIORITY);
 
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_UNO_Q)
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE)
 #include "matrix.inc"
 
 #include "../variants/arduino_uno_q_stm32u585xx/variant.h"
@@ -197,7 +197,9 @@ int analog_reference(uint8_t reference) {
 
 	gpio_pin_configure_dt(&spec, GPIO_OUTPUT);
 
+	#if defined(__HAL_RCC_SYSCFG_CLK_ENABLE)
 	__HAL_RCC_SYSCFG_CLK_ENABLE();
+	#endif
 	__HAL_RCC_VREF_CLK_ENABLE();
 
 	HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE);

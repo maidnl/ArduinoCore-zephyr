@@ -756,4 +756,66 @@ unoq.bootloader.tool.default=remoteocd
 unoq.bootloader.file=zephyr-{build.variant}.elf
 unoq.bootloader.target=stm32u585zitxq
 
-##########################################################################################
+##############################################################################################################
+
+gertrude.name=Arduino Gertrude
+gertrude.build.core=arduino
+gertrude.build.crossprefix=arm-zephyr-eabi-
+gertrude.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+
+gertrude.menu.link_mode.dynamic=Dynamic
+gertrude.menu.link_mode.static=Static
+gertrude.menu.link_mode.static.build.link_mode=static
+gertrude.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+gertrude.menu.wait_linux_boot.yes=Wait for Linux
+gertrude.menu.wait_linux_boot.no=Immediate
+gertrude.menu.wait_linux_boot.no.build.boot_mode=immediate
+gertrude.menu.wait_linux_boot.app=Wait for App
+gertrude.menu.wait_linux_boot.app.build.boot_mode=app
+gertrude.openocd_cfg=flash_sketch.cfg
+
+gertrude.build.zephyr_target=arduino_gertrude
+gertrude.build.zephyr_args=
+gertrude.build.variant=arduino_gertrude_stm32h5f5xx
+gertrude.build.artifact=zephyr_unoq
+gertrude.build.subarch=zephyr
+gertrude.build.mcu=cortex-m33
+gertrude.build.fpu=-mfpu=fpv5-sp-d16
+gertrude.build.architecture=cortex-m33
+gertrude.compiler.zephyr.arch.define=
+
+gertrude.build.float-abi=-mfloat-abi=hard
+gertrude.build.extra_flags=
+gertrude.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+gertrude.build.board=GERTRUDE
+gertrude.build.zephyr_hals=hal_stm32
+gertrude.compiler.zephyr.arch.define=
+gertrude.compiler.zephyr=
+gertrude.vid.0=0x2341
+gertrude.pid.0=0x0080
+gertrude.vid.1=0x1209
+gertrude.pid.1=0xca01
+gertrude.upload_port.0.vid=0x2341
+gertrude.upload_port.0.pid=0x0080
+gertrude.upload.address=0x80F0000
+gertrude.upload.target=stm32h5f5xx
+
+gertrude.upload.tool=remoteocd
+gertrude.upload.tool.default=remoteocd
+gertrude.upload.tool.network=remoteocd_network
+gertrude.upload.protocol=
+gertrude.upload.transport=
+gertrude.upload.vid=0x2341
+gertrude.upload.pid=0x0078
+gertrude.upload.interface=0
+gertrude.upload.use_1200bps_touch=false
+gertrude.upload.wait_for_upload_port=false
+gertrude.upload.native_usb=true
+gertrude.upload.maximum_size=1966080
+gertrude.upload.maximum_data_size=523624
+
+gertrude.bootloader.tool=remoteocd
+gertrude.bootloader.tool.default=remoteocd
+gertrude.bootloader.file=zephyr-{build.variant}.elf
+gertrude.bootloader.target=stm32h5f5xx

@@ -1,0 +1,130 @@
+&timers17 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_matrix: counter {
+		status = "okay";
+		label = "LED_MATRIX_COUNTER";
+	};
+};
+
+
+&flash0 {
+	partitions {
+		bootanimation: partition@90000 {
+			reg = <0x090000 DT_SIZE_K(64)>;
+		};
+		user_sketch: partition@100000 {
+			reg = <0x0F0000 DT_SIZE_M(1)>;
+		};
+	};
+};
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>, /* D0 - PB7 */
+				    <&gpiob 6 GPIO_ACTIVE_HIGH>, /* D1 - PB6 */
+				    <&gpiob 3 GPIO_ACTIVE_HIGH>, /* D2 - PB3 */
+				    <&gpiob 0 GPIO_ACTIVE_HIGH>, /* D3 - PB0 */
+				    <&gpioa 12 GPIO_ACTIVE_HIGH>, /* D4 - PA12 */
+				    <&gpioa 11 GPIO_ACTIVE_HIGH>, /* D5 - PA11 */
+				    <&gpiob 1 GPIO_ACTIVE_HIGH>, /* D6 - PB1 */
+				    <&gpiob 2 GPIO_ACTIVE_HIGH>, /* D7 - PB2 */
+				    <&gpiob 4 GPIO_ACTIVE_HIGH>, /* D8 - PB4 */
+				    <&gpiob 8 GPIO_ACTIVE_HIGH>, /* D9 - PB8 */
+				    <&gpiob 9 GPIO_ACTIVE_HIGH>, /* D10 - PB9 */
+				    <&gpiob 15 GPIO_ACTIVE_HIGH>, /* D11 - PB15 */
+				    <&gpiob 14 GPIO_ACTIVE_HIGH>, /* D12 - PB14 */
+				    <&gpiob 13 GPIO_ACTIVE_HIGH>, /* D13 - PB13 */
+
+					/* ADCs */
+				    <&gpioa 4 GPIO_ACTIVE_HIGH>, /* A0 - PA4 */
+				    <&gpioa 5 GPIO_ACTIVE_HIGH>, /* A1 - PA5 */
+				    <&gpioa 6 GPIO_ACTIVE_HIGH>, /* A2 - PA6 */
+				    <&gpioa 7 GPIO_ACTIVE_HIGH>, /* A3 - PA7 */
+				    <&gpioc 1 GPIO_ACTIVE_HIGH>, /* A4 - PC1 */
+				    <&gpioc 0 GPIO_ACTIVE_HIGH>, /* A5 - PC0 */
+
+				    <&gpiob 11 GPIO_ACTIVE_HIGH>,  /* D20 - PB11 */
+				    <&gpiob 10 GPIO_ACTIVE_HIGH>,  /* D21 - PB10 */
+
+				    <&gpioc 2 GPIO_ACTIVE_HIGH>,        /* JSPI */
+				    <&gpioc 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 1 GPIO_ACTIVE_HIGH>,
+
+				    <&gpioc 6 GPIO_ACTIVE_HIGH>,	/* JMISC */
+				    <&gpiod 2 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 7 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 2 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 3 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 9 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 5 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 4 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 6 GPIO_ACTIVE_HIGH>,
+				    <&gpioi 4 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 7 GPIO_ACTIVE_HIGH>,
+				    <&gpioi 6 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioi 7 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 9 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 15 GPIO_ACTIVE_HIGH>,
+				    <&gpioi 5 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 0 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 1 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 10 GPIO_ACTIVE_HIGH>,
+
+				    <&gpioh 10 GPIO_ACTIVE_HIGH>,        /* LEDs */
+				    <&gpioh 11 GPIO_ACTIVE_HIGH>,
+				    <&gpioh 12 GPIO_ACTIVE_HIGH>,
+				    <&gpioh 13 GPIO_ACTIVE_HIGH>,
+				    <&gpioh 14 GPIO_ACTIVE_HIGH>,
+				    <&gpioh 15 GPIO_ACTIVE_HIGH>,
+
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,        /* LED matrix */
+				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 2 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 5 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 7 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 8 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 9 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 13 GPIO_ACTIVE_HIGH>,       /* Internal SPI RDY */
+				    <&gpioa 2 GPIO_ACTIVE_HIGH>,        /* Analog switch for VREF */
+				    <&gpioh 3 GPIO_ACTIVE_HIGH>;        /* BOOT0 */
+
+		builtin-led-gpios = <&gpioh 10 GPIO_ACTIVE_HIGH>;
+
+		adc-pin-gpios =	<&gpioa 4 0>,
+					<&gpioa 5 0>,
+					<&gpioa 6 0>,
+					<&gpioa 7 0>,
+					<&gpioc 1 0>,
+					<&gpioc 0 0>;
+
+		serials = <&usart3>, <&lpuart1>;
+		i2cs = <&i2c2>, <&i2c4>;
+		spis = <&spi2>, <&spi3>;
+
+		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>;    /* Internal SPI RDY, connected to GPIO_MD_95 */
+		analog-switch-gpios = <&gpioi 8 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
+
+		io-channels =	<&adc1 9>,     /* A0 - PA4 */
+				<&adc1 10>,   /* A1 - PA5 */
+				<&adc1 11>,   /* A2 - PA6 */
+				<&adc1 12>,   /* A3 - PA7 */
+				<&adc1 2>,    /* A4 - PC1 */
+				<&adc1 1>;    /* A5 - PC0 */
+
+		dac = <&dac1>;
+		dac-channels = <1>, <2>;
+		dac-resolution = <12>;
+	};
+};
