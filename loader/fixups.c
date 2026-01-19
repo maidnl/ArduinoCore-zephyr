@@ -187,6 +187,7 @@ SYS_INIT(maybe_flash_bootloader, POST_KERNEL, CONFIG_FILE_SYSTEM_INIT_PRIORITY);
 #include "../variants/arduino_uno_q_stm32u585xx/variant.h"
 #include <stm32_ll_adc.h>
 #include <zephyr/devicetree.h>
+#include <cannectivity/usb/class/gs_usb.h>
 
 int analog_reference(uint8_t reference) {
 	uint8_t init_status;
@@ -243,6 +244,52 @@ int analog_reference(uint8_t reference) {
 }
 
 EXPORT_SYMBOL(analog_reference);
+
+static const struct gs_usb_ops gs_usb_ops = {
+#ifdef CONFIG_CANNECTIVITY_TIMESTAMP
+	.timestamp = cannectivity_timestamp_get,
+#endif
+#ifdef CONFIG_CANNECTIVITY_LED
+	.event = cannectivity_led_event,
+#endif
+};
+
+#define CANNECTIVITY_DT_NODE_ID DT_NODELABEL(cannectivity)
+#define CANNECTIVITY_DT_HAS_CHANNEL DT_HAS_COMPAT_STATUS_OKAY(cannectivity_channel)
+#define CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(fn, sep)                                               \
+	DT_FOREACH_CHILD_STATUS_OKAY_SEP(CANNECTIVITY_DT_NODE_ID, fn, sep)
+#define CHANNEL_CAN_CONTROLLER_DT_GET(node_id) DEVICE_DT_GET(DT_PHANDLE(node_id, can_controller))
+
+int enable_cannectivity() {
+
+	const struct device *gs_usb = DEVICE_DT_GET(DT_NODELABEL(gs_usb0));
+	const struct device *channels[] = {
+		CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_CAN_CONTROLLER_DT_GET, (,))
+	};
+	int err;
+
+	if (IS_ENABLED(CONFIG_CANNECTIVITY_LED)) {
+		err = cannectivity_led_init();
+		if (err != 0) {
+			return -1;
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_CANNECTIVITY_TIMESTAMP)) {
+		err = cannectivity_timestamp_init();
+		if (err != 0) {
+			return -1;
+		}
+	}
+
+	err = gs_usb_register(gs_usb, channels, ARRAY_SIZE(channels), &gs_usb_ops, NULL);
+	if (err != 0U) {
+		return -1;
+	}
+	return 0;
+}
+
+SYS_INIT(enable_cannectivity, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 int disable_vrefbuf() {
 	// This is the safe HW configuration
