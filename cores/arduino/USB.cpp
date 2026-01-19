@@ -14,6 +14,8 @@
 const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
 
+
+// TODO: replace this with something like https://github.com/CANnectivity/cannectivity/blob/f87aecab7b29704c07d255dc9f68097a1f4e1f60/app/src/usb.c#L459-L460
 void __attribute__((weak)) _on_1200_bps() {
 	NVIC_SystemReset();
 }

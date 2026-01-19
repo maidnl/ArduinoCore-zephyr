@@ -31,6 +31,21 @@
 	};
 };
 
+&i2c1 {
+	fan_control: eeprom@2f {
+		reg = <0x2f>;
+		size = <256>;
+		compatible = "zephyr,i2c-target-eeprom";
+		status = "okay";
+	};
+	gpio_control: eeprom@22 {
+		reg = <0x22>;
+		size = <256>;
+		compatible = "zephyr,i2c-target-eeprom";
+		status = "okay";
+	};
+};
+
 / {
 	zephyr,user {
 		digital-pin-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>, /* D0 - PB7 */
