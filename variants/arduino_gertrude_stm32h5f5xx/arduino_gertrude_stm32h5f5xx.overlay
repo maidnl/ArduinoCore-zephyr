@@ -175,21 +175,21 @@
 			compatible = "cannectivity-channel";
 			can-controller = <&fdcan1>;
 			/* TODO: changeme Use TX LED for channel 0 state + activity */
-			state-led = <&green_led>;
+			state-led = <&red_led_3>;
 		};
 
 		channel1 {
 			compatible = "cannectivity-channel";
 			can-controller = <&fdcan2>;
 			/* TODO: changeme Use TX LED for channel 0 state + activity */
-			state-led = <&green_led>;
+			state-led = <&red_led_3>;
 		};
 
 		channel2 {
 			compatible = "cannectivity-channel";
 			can-controller = <&fdcan3>;
 			/* TODO: changeme Use TX LED for channel 0 state + activity */
-			state-led = <&green_led>;
+			state-led = <&red_led_3>;
 		};
 	};
 };
