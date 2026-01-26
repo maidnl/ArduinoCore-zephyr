@@ -48,17 +48,17 @@
 
 / {
 	zephyr,user {
-		digital-pin-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>, /* D0 - PB7 */
-				    <&gpiob 6 GPIO_ACTIVE_HIGH>, /* D1 - PB6 */
-				    <&gpiob 3 GPIO_ACTIVE_HIGH>, /* D2 - PB3 */
-				    <&gpiob 0 GPIO_ACTIVE_HIGH>, /* D3 - PB0 */
-				    <&gpioa 12 GPIO_ACTIVE_HIGH>, /* D4 - PA12 */
-				    <&gpioa 11 GPIO_ACTIVE_HIGH>, /* D5 - PA11 */
-				    <&gpiob 1 GPIO_ACTIVE_HIGH>, /* D6 - PB1 */
-				    <&gpiob 2 GPIO_ACTIVE_HIGH>, /* D7 - PB2 */
+		digital-pin-gpios = <&gpiob 11 GPIO_ACTIVE_HIGH>, /* D0 - PB11 */
+				    <&gpiob 10 GPIO_ACTIVE_HIGH>, /* D1 - PB10 */
+				    <&gpiob 0 GPIO_ACTIVE_HIGH>, /* D2 - PB0 */
+				    <&gpiob 1 GPIO_ACTIVE_HIGH>, /* D3 - PB1 */
+				    <&gpiob 6 GPIO_ACTIVE_HIGH>, /* D4 - PB6 */
+				    <&gpiob 5 GPIO_ACTIVE_HIGH>, /* D5 - PB5 */
+				    <&gpiob 2 GPIO_ACTIVE_HIGH>, /* D6 - PB2 */
+				    <&gpiob 3 GPIO_ACTIVE_HIGH>, /* D7 - PB3 */
 				    <&gpiob 4 GPIO_ACTIVE_HIGH>, /* D8 - PB4 */
-				    <&gpiob 8 GPIO_ACTIVE_HIGH>, /* D9 - PB8 */
-				    <&gpiob 9 GPIO_ACTIVE_HIGH>, /* D10 - PB9 */
+				    <&gpiob 7 GPIO_ACTIVE_HIGH>, /* D9 - PB7 */
+				    <&gpiob 12 GPIO_ACTIVE_HIGH>, /* D10 - PB12 */
 				    <&gpiob 15 GPIO_ACTIVE_HIGH>, /* D11 - PB15 */
 				    <&gpiob 14 GPIO_ACTIVE_HIGH>, /* D12 - PB14 */
 				    <&gpiob 13 GPIO_ACTIVE_HIGH>, /* D13 - PB13 */
