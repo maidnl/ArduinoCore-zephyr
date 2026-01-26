@@ -137,7 +137,7 @@
 
 		serials = <&board_cdc_acm_uart>, <&usart3>;
 		cdc-acm = <&board_cdc_acm_uart>;
-		i2cs = <&i2c2>, <&i2c4>;
+		i2cs = <&i2c2>, <&i2c4_bitbanged>, <&i2c3>;
 		spis = <&spi2>, <&spi3>;
 
 		pwms = <>;
