@@ -383,29 +383,17 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 
 static const struct device *fan_eeprom = DEVICE_DT_GET(DT_NODELABEL(fan_control));
 static const struct device *gpio_eeprom = DEVICE_DT_GET(DT_NODELABEL(gpio_control));
-
-//static const struct device *const fan_pwm = DEVICE_DT_GET(DT_ALIAS(pwm_0));
+static const struct device *fan_pwm = DEVICE_DT_GET(DT_NODELABEL(pwm16));
+static const struct device *fan_tach = DEVICE_DT_GET(DT_NODELABEL(pwm14));
 
 volatile uint8_t fan_control_buffer[256];
 
 static void on_fan_changed(const struct device *dev, void *user_data)
 {
-#if 0
-	unsigned int size;
-
-	size = eeprom_target_get_size(dev);
-
-	printk("Eeprom fan changed, now contains:\n");
-	for (unsigned int i = 0; i < size; i++) {
-		uint8_t data;
-		char sep = i % 16 == 15 ? '\n' : ' ';
-
-		eeprom_target_read_data(dev, i, &data, sizeof(data));
-
-		printk("%02x%c", data, sep);
-	}
-	printk("\n");
-#endif
+    uint8_t data = 0x00;
+	/* Read fan speed from eeprom and update pwm */
+	eeprom_target_read_data(dev, 0x30, &data, sizeof(data));
+	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 }
 
 static void on_gpio_changed(const struct device *dev, void *user_data)
@@ -455,17 +443,19 @@ int main(void) {
 
 	printk("Hello world\n");
 
-	/*if (!device_is_ready(&fan_pwm)) {
+	if (!device_is_ready(fan_pwm)) {
 		printk("Error: PWM device is not ready\n");
 		return 0;
 	}
 
-	pwm_set(fan_pwm,0, PWM_USEC(1000), PWM_USEC(1000) / 2, PWM_POLARITY_NORMAL);*/
+	if (!device_is_ready(fan_tach)) {
+		printk("device is not ready\n");
+		return 0;
+	}
 
-	const struct gpio_dt_spec fangpio =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), fan_gpios, 1);
+	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(2550) / 2, PWM_POLARITY_NORMAL);
 
-		gpio_pin_configure_dt(&fangpio, GPIO_OUTPUT_ACTIVE);
+
 
     if (!device_is_ready(fan_eeprom)) {
 		printk("fan eeprom device not ready\n");
