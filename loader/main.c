@@ -23,6 +23,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/usb/usb_device.h>
 
 #include <zephyr/devicetree/fixed-partitions.h>
@@ -386,102 +387,114 @@ static const struct device *gpio_eeprom = DEVICE_DT_GET(DT_NODELABEL(gpio_contro
 static const struct device *fan_pwm = DEVICE_DT_GET(DT_NODELABEL(pwm16));
 static const struct device *fan_tach = DEVICE_DT_GET(DT_NODELABEL(pwm14));
 
-volatile uint8_t fan_control_buffer[256];
+struct backup_store {
+	uint32_t magic;
+	uint8_t fan_control_buffer[256];
+	uint8_t leds_control_buffer[256];
+};
+__stm32_backup_sram_section struct backup_store backup;
 
 static void on_fan_changed(const struct device *dev, void *user_data)
 {
-    uint8_t data = 0x00;
-	/* Read fan speed from eeprom and update pwm */
-	eeprom_target_read_data(dev, 0x30, &data, sizeof(data));
+	size_t size = eeprom_target_get_size(dev);
+	/* Read all eeprom memory and backup it */
+	eeprom_target_read_data(dev, 0, backup.fan_control_buffer, size);
+	/* Read fan speed and set PWM value */
+	const uint8_t data = backup.fan_control_buffer[0x30];
 	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 }
 
 static void on_gpio_changed(const struct device *dev, void *user_data)
 {
-	unsigned int size;
-
-	size = eeprom_target_get_size(dev);
-
-	printk("Eeprom gpio changed, now contains:\n");
-	for (unsigned int i = 0; i < size; i++) {
-		uint8_t data;
-		char sep = i % 16 == 15 ? '\n' : ' ';
-
-		eeprom_target_read_data(dev, i, &data, sizeof(data));
-
-		printk("%02x%c", data, sep);
-	}
-	printk("\n");
+	size_t size = eeprom_target_get_size(dev);
+	eeprom_target_read_data(dev, 0, backup.leds_control_buffer, size);
+	// do stuff with new values
 }
 
 int main(void) {
 
-    memset(fan_control_buffer, 0xFF, sizeof(fan_control_buffer));
-    fan_control_buffer[0x27] = 0x00; //Drive fail
-    fan_control_buffer[0x30] = 0x00; //Fan 1 drive
-    fan_control_buffer[0x38] = 0x66; //Fan 1 min drive
-    fan_control_buffer[0x3E] = 0xFF; //Fan 1 tach msb
-    fan_control_buffer[0x3F] = 0xF8; //Fan 1 tach lsb
-    fan_control_buffer[0x40] = 0x00; //Fan 2 drive
-    fan_control_buffer[0x48] = 0x66; //Fan 2 min drive
-    fan_control_buffer[0x4E] = 0xFF; //Fan 2 tach msb
-    fan_control_buffer[0x4F] = 0xF8; //Fan 2 tach lsb
-    fan_control_buffer[0x50] = 0x00; //Fan 3 drive
-    fan_control_buffer[0x58] = 0x66; //Fan 3 min drive
-    fan_control_buffer[0x5E] = 0xFF; //Fan 3 tach msb
-    fan_control_buffer[0x5F] = 0xF8; //Fan 3 tach lsb
-    fan_control_buffer[0x60] = 0x00; //Fan 4 drive
-    fan_control_buffer[0x68] = 0x66; //Fan 4 min drive
-    fan_control_buffer[0x6E] = 0xFF; //Fan 4 tach msb
-    fan_control_buffer[0x6F] = 0xF8; //Fan 4 tach lsb
-    fan_control_buffer[0x70] = 0x00; //Fan 5 drive
-    fan_control_buffer[0x78] = 0x66; //Fan 5 min drive
-    fan_control_buffer[0x7E] = 0xFF; //Fan 5 tach msb
-    fan_control_buffer[0x7F] = 0xF8; //Fan 5 tach lsb
-    fan_control_buffer[0xFD] = 0x34; //Product
-    fan_control_buffer[0xFE] = 0x5D; //Vendor
-
 	printk("Hello world\n");
 
+	/* Linux Ready GPIO input */
+	const struct gpio_dt_spec spec =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
+	gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
+
+	/* Backup memory */
+	const struct device *const backup_memory = DEVICE_DT_GET_ONE(st_stm32_backup_sram);
+	if (!device_is_ready(backup_memory)) {
+		printk("ERROR: BackUp SRAM device is not ready\n");
+		return 0;
+	}
+
+	/* Initializize controllers values to default at power ON */
+	uint32_t reset_cause_id = 0;
+	hwinfo_get_reset_cause(&reset_cause_id);
+	if (reset_cause_id == RESET_POR) {
+		printk("Reset EEPROM memory to default values\n");
+		memset(backup.leds_control_buffer, 0xFF, sizeof(backup.leds_control_buffer));
+		memset(backup.fan_control_buffer, 0xFF, sizeof(backup.fan_control_buffer));
+		backup.fan_control_buffer[0x27] = 0x00; //Drive fail
+		backup.fan_control_buffer[0x30] = 0x00; //Fan 1 drive
+		backup.fan_control_buffer[0x38] = 0x66; //Fan 1 min drive
+		backup.fan_control_buffer[0x3E] = 0xFF; //Fan 1 tach msb
+		backup.fan_control_buffer[0x3F] = 0xF8; //Fan 1 tach lsb
+		backup.fan_control_buffer[0x40] = 0x00; //Fan 2 drive
+		backup.fan_control_buffer[0x48] = 0x66; //Fan 2 min drive
+		backup.fan_control_buffer[0x4E] = 0xFF; //Fan 2 tach msb
+		backup.fan_control_buffer[0x4F] = 0xF8; //Fan 2 tach lsb
+		backup.fan_control_buffer[0x50] = 0x00; //Fan 3 drive
+		backup.fan_control_buffer[0x58] = 0x66; //Fan 3 min drive
+		backup.fan_control_buffer[0x5E] = 0xFF; //Fan 3 tach msb
+		backup.fan_control_buffer[0x5F] = 0xF8; //Fan 3 tach lsb
+		backup.fan_control_buffer[0x60] = 0x00; //Fan 4 drive
+		backup.fan_control_buffer[0x68] = 0x66; //Fan 4 min drive
+		backup.fan_control_buffer[0x6E] = 0xFF; //Fan 4 tach msb
+		backup.fan_control_buffer[0x6F] = 0xF8; //Fan 4 tach lsb
+		backup.fan_control_buffer[0x70] = 0x00; //Fan 5 drive
+		backup.fan_control_buffer[0x78] = 0x66; //Fan 5 min drive
+		backup.fan_control_buffer[0x7E] = 0xFF; //Fan 5 tach msb
+		backup.fan_control_buffer[0x7F] = 0xF8; //Fan 5 tach lsb
+	}
+	backup.fan_control_buffer[0xFD] = 0x34; //Product
+	backup.fan_control_buffer[0xFE] = 0x5D; //Vendor
+
+	/* Fan PWM out configuration */
 	if (!device_is_ready(fan_pwm)) {
 		printk("Error: PWM device is not ready\n");
 		return 0;
 	}
+	const uint8_t data = backup.fan_control_buffer[0x30];
+	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 
+	/* TODO Fan TACH input configuration */
 	if (!device_is_ready(fan_tach)) {
 		printk("device is not ready\n");
 		return 0;
 	}
 
-	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(2550) / 2, PWM_POLARITY_NORMAL);
-
-
-
+	/* Fan controller EEPROM driver configuration */
     if (!device_is_ready(fan_eeprom)) {
 		printk("fan eeprom device not ready\n");
 		return 0;
 	}
-
 	eeprom_target_set_changed_callback(fan_eeprom, on_fan_changed, NULL);
 
 	if (i2c_target_driver_register(fan_eeprom) < 0) {
 		printk("Failed to register fan i2c eeprom target driver\n");
 		return 0;
 	}
-
 	printk("fan eeprom i2c target driver registered\n");
 
-	unsigned int size;
-	size = eeprom_target_get_size(fan_eeprom);
-	eeprom_target_write_data(fan_eeprom, 0, fan_control_buffer, size);
-
+	unsigned int size = eeprom_target_get_size(fan_eeprom);
+	eeprom_target_write_data(fan_eeprom, 0, backup.fan_control_buffer, size);
 	printk("fan eeprom i2c target driver default values set\n");
 
+	/* GPIO expander EEPROM driver configuration */
 	if (!device_is_ready(gpio_eeprom)) {
 		printk("gpio eeprom device not ready\n");
 		return 0;
 	}
-
 	eeprom_target_set_changed_callback(gpio_eeprom, on_gpio_changed, NULL);
 
 	if (i2c_target_driver_register(gpio_eeprom) < 0) {
@@ -489,13 +502,58 @@ int main(void) {
 		return 0;
 	}
 
+	size = eeprom_target_get_size(gpio_eeprom);
+	eeprom_target_write_data(gpio_eeprom, 0, backup.leds_control_buffer, size);
 	printk("gpio eeprom i2c target driver registered\n");
 
+	/* Restore LEDs values saved in backup RAM */
+	static const struct gpio_dt_spec led0g =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 0);
+	gpio_pin_configure_dt(&led0g, backup.leds_control_buffer[0]);
 
-	const struct gpio_dt_spec spec =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
+	static const struct gpio_dt_spec led0b =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 1);
+	gpio_pin_configure_dt(&led0b, backup.leds_control_buffer[1]);
 
-	gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
+	static const struct gpio_dt_spec led0r =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 2);
+	gpio_pin_configure_dt(&led0r, backup.leds_control_buffer[2]);
+
+	static const struct gpio_dt_spec led1g =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 3);
+	gpio_pin_configure_dt(&led1g, backup.leds_control_buffer[3]);
+
+	static const struct gpio_dt_spec led1b =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 4);
+	gpio_pin_configure_dt(&led1b, backup.leds_control_buffer[4]);
+
+	static const struct gpio_dt_spec led1r =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 5);
+	gpio_pin_configure_dt(&led1r, backup.leds_control_buffer[5]);
+
+	static const struct gpio_dt_spec led2g =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 6);
+	gpio_pin_configure_dt(&led2g, backup.leds_control_buffer[6]);
+
+	static const struct gpio_dt_spec led2b =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 7);
+	gpio_pin_configure_dt(&led2b, backup.leds_control_buffer[7]);
+
+	static const struct gpio_dt_spec led2r =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 8);
+	gpio_pin_configure_dt(&led2r, backup.leds_control_buffer[8]);
+
+	static const struct gpio_dt_spec led3g =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 9);
+	gpio_pin_configure_dt(&led3g, backup.leds_control_buffer[9]);
+
+	static const struct gpio_dt_spec led3b =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 10);
+	gpio_pin_configure_dt(&led3b, backup.leds_control_buffer[10]);
+
+	static const struct gpio_dt_spec led3r =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
+	gpio_pin_configure_dt(&led3r, backup.leds_control_buffer[11]);
 
 	loader(NULL);
 	return 0;
