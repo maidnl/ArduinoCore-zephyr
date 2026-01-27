@@ -104,12 +104,18 @@
 				    <&gpioa 1 GPIO_ACTIVE_HIGH>,
 				    <&gpioa 10 GPIO_ACTIVE_HIGH>,
 
-				    <&gpioh 10 GPIO_ACTIVE_HIGH>,        /* LEDs */
-				    <&gpioh 11 GPIO_ACTIVE_HIGH>,
-				    <&gpioh 12 GPIO_ACTIVE_HIGH>,
-				    <&gpioh 13 GPIO_ACTIVE_HIGH>,
-				    <&gpioh 14 GPIO_ACTIVE_HIGH>,
-				    <&gpioh 15 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs */
+				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 1 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 5 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 0 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 11 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 2 GPIO_ACTIVE_HIGH>,
 
 				    <&gpiof 0 GPIO_ACTIVE_HIGH>,        /* LED matrix */
 				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
@@ -126,14 +132,20 @@
 				    <&gpioa 2 GPIO_ACTIVE_HIGH>,        /* Analog switch for VREF */
 				    <&gpioh 3 GPIO_ACTIVE_HIGH>;        /* BOOT0 */
 
-		builtin-led-gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs */
+				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 1 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 5 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 0 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 11 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 2 GPIO_ACTIVE_HIGH>;
 
-		adc-pin-gpios =	<&gpioa 4 0>,
-					<&gpioa 5 0>,
-					<&gpioa 6 0>,
-					<&gpioa 7 0>,
-					<&gpioc 1 0>,
-					<&gpioc 0 0>;
+		adc-pin-gpios =	<>;
 
 		serials = <&board_cdc_acm_uart>, <&usart3>;
 		cdc-acm = <&board_cdc_acm_uart>;
@@ -149,12 +161,10 @@
 		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>;    /* Internal SPI RDY, connected to GPIO_MD_95 */
 		analog-switch-gpios = <&gpioi 8 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
 
-		io-channels =	<&adc1 9>,     /* A0 - PA4 */
-				<&adc1 10>,   /* A1 - PA5 */
-				<&adc1 11>,   /* A2 - PA6 */
-				<&adc1 12>,   /* A3 - PA7 */
-				<&adc1 2>,    /* A4 - PC1 */
-				<&adc1 1>;    /* A5 - PC0 */
+		fan-gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>,
+				<&gpiog 15 GPIO_ACTIVE_HIGH>;
+
+		io-channels = <>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
