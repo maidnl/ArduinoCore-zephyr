@@ -66,17 +66,17 @@
 					/* ADCs */
 				    <&gpioa 4 GPIO_ACTIVE_HIGH>, /* A0 - PA4 */
 				    <&gpioa 5 GPIO_ACTIVE_HIGH>, /* A1 - PA5 */
-				    <&gpioa 6 GPIO_ACTIVE_HIGH>, /* A2 - PA6 */
-				    <&gpioa 7 GPIO_ACTIVE_HIGH>, /* A3 - PA7 */
-				    <&gpioc 1 GPIO_ACTIVE_HIGH>, /* A4 - PC1 */
-				    <&gpioc 0 GPIO_ACTIVE_HIGH>, /* A5 - PC0 */
+				    <&gpioe 12 GPIO_ACTIVE_HIGH>, /* A2 - PE12 */
+				    <&gpioe 13 GPIO_ACTIVE_HIGH>, /* A3 - PE13 */
+				    <&gpioe 14 GPIO_ACTIVE_HIGH>, /* A4 - PE14 */
+				    <&gpioe 15 GPIO_ACTIVE_HIGH>, /* A5 - PE15 */
 
-				    <&gpiob 11 GPIO_ACTIVE_HIGH>,  /* D20 - PB11 */
-				    <&gpiob 10 GPIO_ACTIVE_HIGH>,  /* D21 - PB10 */
+				    <&gpioh 10 GPIO_ACTIVE_HIGH>,  /* D20 - PH10 */
+				    <&gpioh 11 GPIO_ACTIVE_HIGH>,  /* D21 - PH11 */
 
-				    <&gpioc 2 GPIO_ACTIVE_HIGH>,        /* JSPI */
-				    <&gpioc 3 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 1 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 10 GPIO_ACTIVE_HIGH>,        /* JSPI */
+				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 12 GPIO_ACTIVE_HIGH>,
 
 				    <&gpioc 6 GPIO_ACTIVE_HIGH>,	/* JMISC */
 				    <&gpiod 2 GPIO_ACTIVE_HIGH>,
@@ -145,7 +145,12 @@
 				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 2 GPIO_ACTIVE_HIGH>;
 
-		adc-pin-gpios =	<>;
+		adc-pin-gpios =	<&gpioa  4 0>,
+				    <&gpioa  5 0>,
+				    <&gpioe 12 0>,
+				    <&gpioe 13 0>,
+				    <&gpioe 14 0>,
+				    <&gpioe 15 0>;
 
 		serials = <&board_cdc_acm_uart>, <&usart3>;
 		cdc-acm = <&board_cdc_acm_uart>;
@@ -164,7 +169,12 @@
 		fan-gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>,
 				<&gpiog 15 GPIO_ACTIVE_HIGH>;
 
-		io-channels = <>;
+		io-channels = <&adc1 18>,
+				    <&adc1 19>,
+				    <&adc3  6>,
+				    <&adc3  7>,
+				    <&adc3  8>,
+				    <&adc3  9>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
