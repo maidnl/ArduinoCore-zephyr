@@ -104,6 +104,16 @@
 				    <&gpioa 11 GPIO_ACTIVE_HIGH>,
 				    <&gpioa 12 GPIO_ACTIVE_HIGH>,
 
+					<&gpioc 0 GPIO_ACTIVE_HIGH>,        /* JOMEGA */
+					<&gpioc 1 GPIO_ACTIVE_HIGH>,
+					<&gpioc 2 GPIO_ACTIVE_HIGH>,
+					<&gpioc 3 GPIO_ACTIVE_HIGH>,
+					<&gpiod 12 GPIO_ACTIVE_HIGH>,
+					<&gpiod 13 GPIO_ACTIVE_HIGH>,
+					<&gpiod 14 GPIO_ACTIVE_HIGH>,
+					<&gpiod 15 GPIO_ACTIVE_HIGH>,
+					<&gpioi 2 GPIO_ACTIVE_HIGH>,
+
 				    <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs GBR */
 				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
