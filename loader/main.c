@@ -497,31 +497,6 @@ int main(void) {
 
 	gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
 
-	static const struct gpio_dt_spec led0b = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 0);
-	static const struct gpio_dt_spec led0g = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 1);
-	static const struct gpio_dt_spec led0r = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 2);
-	static const struct gpio_dt_spec led1b = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 3);
-	static const struct gpio_dt_spec led1g = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 4);
-	static const struct gpio_dt_spec led1r = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 5);
-	static const struct gpio_dt_spec led2b = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 6);
-	static const struct gpio_dt_spec led2g = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 7);
-	static const struct gpio_dt_spec led2r = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 8);
-	static const struct gpio_dt_spec led3b = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 9);
-	static const struct gpio_dt_spec led3g = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 10);
-	static const struct gpio_dt_spec led3r = GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
-    gpio_pin_configure_dt(&led0b, GPIO_OUTPUT_ACTIVE);
-    gpio_pin_configure_dt(&led0g, GPIO_OUTPUT_INACTIVE);
-	gpio_pin_configure_dt(&led0r, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led1b, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led1g, GPIO_OUTPUT_INACTIVE);
-	gpio_pin_configure_dt(&led1r, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led2b, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led2g, GPIO_OUTPUT_INACTIVE);
-	gpio_pin_configure_dt(&led2r, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led3b, GPIO_OUTPUT_ACTIVE);
-	gpio_pin_configure_dt(&led3g, GPIO_OUTPUT_INACTIVE);
-	gpio_pin_configure_dt(&led3r, GPIO_OUTPUT_ACTIVE);
-
 	loader(NULL);
 	return 0;
 }
