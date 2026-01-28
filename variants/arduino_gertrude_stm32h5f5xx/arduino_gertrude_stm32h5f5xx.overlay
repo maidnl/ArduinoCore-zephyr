@@ -78,33 +78,33 @@
 				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
 				    <&gpioc 12 GPIO_ACTIVE_HIGH>,
 
-				    <&gpioc 6 GPIO_ACTIVE_HIGH>,	/* JMISC */
-				    <&gpiod 2 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 7 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 2 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 2 GPIO_ACTIVE_HIGH>,	/* JMISC */
+				    <&gpioa 9 GPIO_ACTIVE_HIGH>,
 				    <&gpioe 3 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 9 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 5 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 7 GPIO_ACTIVE_HIGH>,
 				    <&gpioe 4 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 5 GPIO_ACTIVE_HIGH>,
+				    <&gpioe 1 GPIO_ACTIVE_HIGH>,
 				    <&gpioe 6 GPIO_ACTIVE_HIGH>,
-				    <&gpioi 4 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 11 GPIO_ACTIVE_HIGH>,
 				    <&gpioe 7 GPIO_ACTIVE_HIGH>,
-				    <&gpioi 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 3 GPIO_ACTIVE_HIGH>,
 				    <&gpioe 8 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
 				    <&gpioi 7 GPIO_ACTIVE_HIGH>,
-				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 9 GPIO_ACTIVE_HIGH>,
-				    <&gpiof 15 GPIO_ACTIVE_HIGH>,
-				    <&gpioi 5 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 3 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 8 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 6 GPIO_ACTIVE_HIGH>,
 				    <&gpioa 0 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioi 5 GPIO_ACTIVE_HIGH>,
 				    <&gpioa 1 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 10 GPIO_ACTIVE_HIGH>,
+				    <&gpioh 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 2 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 11 GPIO_ACTIVE_HIGH>,
+				    <&gpioa 12 GPIO_ACTIVE_HIGH>,
 
-				    <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs */
+				    <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs GBR */
 				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
 				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
@@ -132,7 +132,7 @@
 				    <&gpioa 2 GPIO_ACTIVE_HIGH>,        /* Analog switch for VREF */
 				    <&gpioh 3 GPIO_ACTIVE_HIGH>;        /* BOOT0 */
 
-		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs */
+		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs GBR */
 				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
 				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
