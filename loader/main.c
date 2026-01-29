@@ -426,10 +426,11 @@ int main(void) {
 	/* Initializize controllers values to default at power ON */
 	uint32_t reset_cause_id = 0;
 	hwinfo_get_reset_cause(&reset_cause_id);
-	if (reset_cause_id == RESET_POR) {
+	if (reset_cause_id == RESET_POR || backup.magic != 0x67F44F76) {
 		printk("Reset EEPROM memory to default values\n");
 		memset(backup.leds_control_buffer, 0xFF, sizeof(backup.leds_control_buffer));
 		memset(backup.fan_control_buffer, 0xFF, sizeof(backup.fan_control_buffer));
+		backup.magic = 0x67F44F76;
 		backup.fan_control_buffer[0x27] = 0x00; //Drive fail
 		backup.fan_control_buffer[0x30] = 0x00; //Fan 1 drive
 		backup.fan_control_buffer[0x38] = 0x66; //Fan 1 min drive
