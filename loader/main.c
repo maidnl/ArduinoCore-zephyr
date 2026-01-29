@@ -432,7 +432,7 @@ int main(void) {
 		memset(backup.fan_control_buffer, 0xFF, sizeof(backup.fan_control_buffer));
 		backup.magic = 0x67F44F76;
 		backup.fan_control_buffer[0x27] = 0x00; //Drive fail
-		backup.fan_control_buffer[0x30] = 0x00; //Fan 1 drive
+		backup.fan_control_buffer[0x30] = 0x66; //Fan 1 drive
 		backup.fan_control_buffer[0x38] = 0x66; //Fan 1 min drive
 		backup.fan_control_buffer[0x3E] = 0xFF; //Fan 1 tach msb
 		backup.fan_control_buffer[0x3F] = 0xF8; //Fan 1 tach lsb
