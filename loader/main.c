@@ -57,6 +57,7 @@ static struct usbd_context *_usbd;
 int usb_disable() {
 	usbd_disable(_usbd);
 	usbd_shutdown(_usbd);
+	return 0;
 }
 
 int usb_enable(usb_dc_status_callback status_cb) {
