@@ -115,7 +115,7 @@
 					<&gpiod 13 GPIO_ACTIVE_HIGH>,
 					<&gpiod 14 GPIO_ACTIVE_HIGH>,
 					<&gpiod 15 GPIO_ACTIVE_HIGH>,
-					<&gpioi 2 GPIO_ACTIVE_HIGH>, 58
+					<&gpioi 2 GPIO_ACTIVE_HIGH>,
 
 					/* LEDs GBR */
 				    <&gpiog 6 GPIO_ACTIVE_HIGH>,
