@@ -74,37 +74,40 @@
 				    <&gpioh 10 GPIO_ACTIVE_HIGH>,  /* D20 - PH10 */
 				    <&gpioh 11 GPIO_ACTIVE_HIGH>,  /* D21 - PH11 */
 
-				    <&gpioc 10 GPIO_ACTIVE_HIGH>,        /* JSPI */
+					/* JSPI */
+				    <&gpioc 10 GPIO_ACTIVE_HIGH>,
 				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
 				    <&gpioc 12 GPIO_ACTIVE_HIGH>,
+					
+					/* JMISC */
+					<&gpioa 9 GPIO_ACTIVE_HIGH>,	//PIN1  = D25
+				    <&gpioe 2 GPIO_ACTIVE_HIGH>,	//PIN2  = D26
+					<&gpioc 7 GPIO_ACTIVE_HIGH>,	//PIN3  = D27
+				    <&gpioe 3 GPIO_ACTIVE_HIGH>,	//PIN4  = D28
+				    <&gpioc 8 GPIO_ACTIVE_HIGH>,	//PIN5  = D29
+				    <&gpioe 4 GPIO_ACTIVE_HIGH>,	//PIN6  = D30
+				    <&gpioe 1 GPIO_ACTIVE_HIGH>,	//PIN7  = D31
+				    <&gpioe 5 GPIO_ACTIVE_HIGH>,	//PIN8  = D32
+					<&gpioc 11 GPIO_ACTIVE_HIGH>,	//PIN9  = D33
+				    <&gpioe 6 GPIO_ACTIVE_HIGH>,	//PIN10 = D34
+					<&gpiod 3 GPIO_ACTIVE_HIGH>,	//PIN11 = D35
+				    <&gpioe 7 GPIO_ACTIVE_HIGH>,	//PIN12 = D36
+					<&gpiof 4 GPIO_ACTIVE_HIGH>,	//PIN13 = D37
+				    <&gpioe 8 GPIO_ACTIVE_HIGH>,	//PIN14 = D38
+					<&gpioi 7 GPIO_ACTIVE_HIGH>,	//PIN15 = D39
+				    <&gpiof 1 GPIO_ACTIVE_HIGH>,	//PIN16 = D40
+					<&gpioa 6 GPIO_ACTIVE_HIGH>,	//PIN17 = D41
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,	//PIN18 = D42
+					<&gpioi 5 GPIO_ACTIVE_HIGH>,	//PIN19 = D43
+				    <&gpioa 0 GPIO_ACTIVE_HIGH>,	//PIN20 = D44
+					<&gpioh 8 GPIO_ACTIVE_HIGH>,	//PIN21 = D45
+				    <&gpioa 1 GPIO_ACTIVE_HIGH>,	//PIN22 = D46
+					<&gpioa 11 GPIO_ACTIVE_HIGH>,	//PIN23 = D47
+				    <&gpioa 2 GPIO_ACTIVE_HIGH>,	//PIN24 = D48
+				    <&gpioa 12 GPIO_ACTIVE_HIGH>,	//PIN25 = D49
 
-				    <&gpioe 2 GPIO_ACTIVE_HIGH>,	/* JMISC */
-				    <&gpioa 9 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 3 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 7 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 4 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 8 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 5 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 1 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 6 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 11 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 7 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 3 GPIO_ACTIVE_HIGH>,
-				    <&gpioe 8 GPIO_ACTIVE_HIGH>,
-				    <&gpiof 4 GPIO_ACTIVE_HIGH>,
-				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
-				    <&gpioi 7 GPIO_ACTIVE_HIGH>,
-				    <&gpiof 0 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 6 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 0 GPIO_ACTIVE_HIGH>,
-				    <&gpioi 5 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 1 GPIO_ACTIVE_HIGH>,
-				    <&gpioh 8 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 2 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 11 GPIO_ACTIVE_HIGH>,
-				    <&gpioa 12 GPIO_ACTIVE_HIGH>,
-
-					<&gpioc 0 GPIO_ACTIVE_HIGH>,        /* JOMEGA */
+					/* JOMEGA */
+					<&gpioc 0 GPIO_ACTIVE_HIGH>,
 					<&gpioc 1 GPIO_ACTIVE_HIGH>,
 					<&gpioc 2 GPIO_ACTIVE_HIGH>,
 					<&gpioc 3 GPIO_ACTIVE_HIGH>,
@@ -112,9 +115,10 @@
 					<&gpiod 13 GPIO_ACTIVE_HIGH>,
 					<&gpiod 14 GPIO_ACTIVE_HIGH>,
 					<&gpiod 15 GPIO_ACTIVE_HIGH>,
-					<&gpioi 2 GPIO_ACTIVE_HIGH>,
+					<&gpioi 2 GPIO_ACTIVE_HIGH>, 58
 
-				    <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs GBR */
+					/* LEDs GBR */
+				    <&gpiog 6 GPIO_ACTIVE_HIGH>,
 				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
 				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
@@ -127,7 +131,8 @@
 				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 2 GPIO_ACTIVE_HIGH>,
 
-				    <&gpiof 0 GPIO_ACTIVE_HIGH>,        /* LED matrix */
+					/* LED matrix */
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,
 				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
 				    <&gpiof 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiof 3 GPIO_ACTIVE_HIGH>,
@@ -141,7 +146,8 @@
 				    <&gpiog 13 GPIO_ACTIVE_HIGH>,       /* Internal SPI RDY */
 				    <&gpioi 8 GPIO_ACTIVE_HIGH>;        /* Analog switch for VREF */
 
-		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,        /* LEDs GBR */
+					/* LEDs GBR */
+		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,
 				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
 				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
 				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
