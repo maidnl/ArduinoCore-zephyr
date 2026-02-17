@@ -1,6 +1,11 @@
+/* Copyright (C) Arduino SRL (Daniele Aimo)
+   SPDX-License-Identifier: MPL-2.0 */
+
 #include "PDM_impl.h"
 
 #include <Arduino.h>
+#include <cmath>
+#include <cstdint>
 
 extern struct k_mem_slab pdm_slab;
 
@@ -8,14 +13,19 @@ namespace arduino {
 
 /* ######################## ARDUINO NANO 33 BLE ############################ */
 
-#ifdef CONFIG_BOARD_ARDUINO_NANO_33_BLE
-
+#if defined(ARDUINO_NANO33BLE)
 #include <hal/nrf_pdm.h>
+#endif
+
+#if defined(ARDUINO_NANO33BLE) || defined(ARDUINO_GIGA)
 
 static struct pcm_stream_cfg stream;
 static struct dmic_cfg cfg;
 /* the PDM mic zephyr device */
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
+#if defined(ARDUINO_GIGA)
+static const struct device *dfsdm_dev = DEVICE_DT_GET(DT_NODELABEL(dfsdm));
+#endif
 
 /* _____________________________________________________________________read */
 int pdm_read(void **buffer, size_t *size) {
@@ -25,9 +35,24 @@ int pdm_read(void **buffer, size_t *size) {
 int pdm_configure(int channels, int sampleRate) {
 	/* +++++++++ checks and verifications +++++++ */
 
+	/* note: due to the hierarchical structure of the DFSDM peripheral with
+	 * Arduino GIGA is necessary to turn dfsm on before the actual pdm which in
+	 * this case is just a filter within the dfsdm */
+#if defined(ARDUINO_GIGA)
+	if (!device_is_ready(dfsdm_dev)) {
+		int err = device_init(dfsdm_dev);
+		if (err < 0) {
+			return -ENODEV;
+		}
+	}
+#endif
 	/* --- verify digital microphone is ready --- */
 	if (!device_is_ready(dmic_dev)) {
-		return -ENODEV;
+
+		int err = device_init(dmic_dev);
+		if (err < 0) {
+			return -ENODEV;
+		}
 	}
 	/* --- check on channels --- */
 	if (channels < 1 || channels > 2) {
@@ -83,8 +108,11 @@ void pdm_gain(int gain) {
 	/* at the present the zephyr dmic_nrfx_pdm.c does not support the set
 	 * of the gain (gain_l and gain_r are defined in the nrf HAL but not
 	 * used by the driver which use a default value) */
+#if defined(ARDUINO_NANO33BLE)
 	NRF_PDM->GAINR = gain;
 	NRF_PDM->GAINL = gain;
+#endif
 }
+
 #endif
 } // namespace arduino

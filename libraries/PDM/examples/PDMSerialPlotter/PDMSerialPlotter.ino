@@ -1,11 +1,15 @@
+/* Copyright (C) Arduino SRL (Daniele Aimo)
+ * SPDX-License-Identifier: MPL-2.0 */
+
 /*
-  Nano 33 BLE Microphone to Serial Plotter
+  Nano 33 BLE and Giga (with Giga Display) Microphone Serial Plotter
 */
 #include <PDM.h>
 
-#ifndef CONFIG_BOARD_ARDUINO_NANO_33_BLE
-#error "Only Nano 33 BLE board is currently supported by this library"
+#if !defined(CONFIG_BOARD_ARDUINO_NANO_33_BLE) && !defined(ARDUINO_GIGA)
+#error "Only Nano 33 BLE or Arduino GIGA boards are currently supported by this library"
 #endif
+
 // default number of output channels
 // Nano 33 BLE only supports 1 channel
 static const char channels = 1;
@@ -14,7 +18,7 @@ static const int frequency = 16000;
 // Buffer to read samples into
 // For better performance set the user buffer dimension to the dimension
 // of the buffer used by PDM library this way
-short sampleBuffer[DEFAULT_PDM_BUFFER_SIZE];
+short sampleBuffer[PDM_NUMBER_OF_SAMPLES];
 // Number of bytes read
 volatile int samplesRead;
 
@@ -62,11 +66,9 @@ void loop() {
 // It is user responsibility to read from PDM as fast as possible otherwise
 // data will be lost
 void onPDMdata() {
-	// Query the number of bytes available
-	int bytesAvailable = PDM.available();
 	// Read into the sample buffer
-	PDM.read(sampleBuffer, bytesAvailable);
+	int bytesRead = PDM.read(sampleBuffer, sizeof(sampleBuffer));
 
 	// 16-bit, 2 bytes per sample
-	samplesRead = bytesAvailable / 2;
+	samplesRead = bytesRead / 2;
 }

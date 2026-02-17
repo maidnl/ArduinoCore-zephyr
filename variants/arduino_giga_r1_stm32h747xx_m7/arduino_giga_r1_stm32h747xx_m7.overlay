@@ -342,12 +342,11 @@
 		zephyr,log-uart = &log_uarts;
 		zephyr,console = &usart1;
 	};
-
+	
 	log_uarts: log_uarts {
 		compatible = "zephyr,log-uart";
 		uarts = <&usart1 &board_cdc_acm_uart>;
 	};
-
 	/* used to overcome problems with _C analog pins */
 	gpiozz: gpio@deadbeef {
 		compatible = "vnd,gpio";
@@ -563,6 +562,22 @@
 		dac-channels = <1>, <2>;
 		dac-resolution = <12>;
 	};
+};
+&pll2 {
+	status = "okay";
+};
+
+dfsdm: &dfsdm {
+	zephyr,deferred-init;
+	status = "okay";
+};
+
+dmic_dev: &pdm0 {
+	zephyr,deferred-init;
+	filter-order = <5>;
+	//dmas = <&dmamux1 0 101 (STM32_DMA_PERIPH_RX | STM32_DMA_PRIORITY_HIGH)>;
+	//dma-names = "rx";
+	status = "okay";
 };
 
 /* Include common flash filesystem configuration */

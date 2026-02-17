@@ -28,15 +28,15 @@
  * and returns a plain pointer.  LLEXT callers dereference it with no TLS
  * mechanism involved on their side.
  */
-int *arduino_errno_ptr(void)
-{
+int *arduino_errno_ptr(void) {
 	return &errno;
 }
+
 EXPORT_SYMBOL(arduino_errno_ptr);
 
-#define FORCE_EXPORT_SYM(name) \
-       extern void name(void); \
-       EXPORT_SYMBOL(name);
+#define FORCE_EXPORT_SYM(name)                                                                     \
+	extern void name(void);                                                                        \
+	EXPORT_SYMBOL(name);
 
 /*
  * Libc functions are exported with a __real_ prefix so that the sketch
@@ -298,8 +298,8 @@ EXPORT_SYMBOL(k_work_schedule_for_queue);
 EXPORT_SYMBOL(k_work_reschedule_for_queue);
 EXPORT_SYMBOL(k_work_queue_start);
 EXPORT_SYMBOL(k_work_submit_to_queue);
-//FORCE_EXPORT_SYM(k_timer_user_data_set);
-//FORCE_EXPORT_SYM(k_timer_start);
+// FORCE_EXPORT_SYM(k_timer_user_data_set);
+// FORCE_EXPORT_SYM(k_timer_start);
 
 EXPORT_SYMBOL(time);
 EXPORT_SYMBOL(sys_clock_settime);
@@ -354,11 +354,12 @@ FORCE_EXPORT_SYM(__aeabi_ldivmod);
 FORCE_EXPORT_SYM(__aeabi_ul2f);
 FORCE_EXPORT_SYM(__aeabi_dcmpge);
 
-#if defined (CONFIG_CPP)
+#if defined(CONFIG_CPP)
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE) ||               \
+	defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 FORCE_EXPORT_SYM(matrixBegin);
 FORCE_EXPORT_SYM(matrixWrite);
 FORCE_EXPORT_SYM(matrixPlay);
@@ -418,4 +419,13 @@ EXPORT_SYMBOL(arm_irq_priority_set);
 
 #if defined(__arm__)
 EXPORT_SYMBOL(SystemCoreClock);
+#endif
+
+EXPORT_SYMBOL(k_mem_slab_free);
+EXPORT_SYMBOL(k_mem_slab_init);
+EXPORT_SYMBOL(k_mem_slab_alloc);
+
+#if defined(CONFIG_REGULATOR)
+FORCE_EXPORT_SYM(regulator_enable)
+FORCE_EXPORT_SYM(regulator_disable)
 #endif

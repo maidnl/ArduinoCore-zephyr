@@ -1,24 +1,8 @@
 /* Copyright (C) Arduino SRL (Daniele Aimo)
- *SPDX-License-Identifier: MPL-2.0 */
+ *  * SPDX-License-Identifier: MPL-2.0 */
 
 /*
-  Nano 33 BLE and GIGA (with Giga Display) Microphone to Serial Streamer
-
-  How to use this example
-  -----------------------
-
-  Download this sketch into the Nano33 BLE
-  This will start immediately mic acquisition
-  Be sure that serial monitor or any other program is not accessing the Nano33
-  serial port
-  Start the python script present in the same folder (getWawe.py)
-  This python script will get the data streamed by this sketch in the
-  serial port and pack them into a wav file you can listen with any player on
-  your PC
-  NOTE:
-  the python script uses /dev/ttyACM0 as default serial device, change it
-  accordingly if the nano33 serial does not correspond to this device
-  NOTE: the python script only records about 5 seconds of sounds
+  Microphone to Serial Streamer - Start and Stop acquisition
 */
 #include <PDM.h>
 
@@ -30,19 +14,23 @@
 static const char channels = 1;
 // default PCM output frequency
 static const int frequency = 16000;
-
 // Buffer to read samples into
-// *** For better performance set the user buffer dimension to the dimension
-// of the buffer used by PDM library this way ***
+// For better performance set the user buffer dimension to the dimension
+// of the buffer used by PDM library this way
 short sampleBuffer[PDM_NUMBER_OF_SAMPLES];
-
 // Number of bytes read
 volatile int samplesRead;
+
+bool status_on = true;
 
 void setup() {
 	Serial.begin(115200);
 	while (!Serial)
 		;
+
+	while (Serial.available()) {
+		Serial.read();
+	}
 
 	// Configure the data receive callback
 	PDM.onReceive(onPDMdata);
@@ -58,6 +46,8 @@ void setup() {
 }
 
 void loop() {
+	static unsigned long int time = millis();
+
 	// Wait for samples to be read
 	if (samplesRead) {
 
@@ -67,6 +57,20 @@ void loop() {
 		// Clear the read count
 		samplesRead = 0;
 	}
+	if (millis() - time > 5000) {
+		time = millis();
+		if (status_on) {
+			Serial.println("PDM stopped!");
+			PDM.end();
+			status_on = false;
+		} else {
+			if (PDM.begin(channels, frequency)) {
+				status_on = true;
+			} else {
+				Serial.println("FAILED to start PDM!");
+			}
+		}
+	}
 }
 
 // Callback function: Handling the PDM on receive event
@@ -75,9 +79,11 @@ void loop() {
 // It is user responsibility to read from PDM as fast as possible otherwise
 // data will be lost
 void onPDMdata() {
+	// Query the number of bytes available
+	int bytesAvailable = PDM.available();
 	// Read into the sample buffer
-	int bytesRead = PDM.read(sampleBuffer, sizeof(sampleBuffer));
+	PDM.read(sampleBuffer, bytesAvailable);
 
 	// 16-bit, 2 bytes per sample
-	samplesRead = bytesRead / 2;
+	samplesRead = bytesAvailable / 2;
 }
