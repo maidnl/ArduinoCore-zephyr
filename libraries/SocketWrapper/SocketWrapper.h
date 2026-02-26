@@ -17,6 +17,8 @@
 #endif
 
 #include <zephyr/net/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 class ZephyrSocketWrapper {
 protected:
@@ -74,7 +76,7 @@ public:
 
 	~ZephyrSocketWrapper() {
 		if (sock_fd != -1) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 		}
 	}
 
@@ -114,7 +116,7 @@ public:
 		}
 
 		if (::connect(sock_fd, res->ai_addr, res->ai_addrlen) < 0) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 			rv = false;
 			goto exit;
@@ -144,7 +146,7 @@ public:
 		}
 
 		if (::connect(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 			return false;
 		}
@@ -176,7 +178,7 @@ public:
 		};
 
 		while (resolve_attempts--) {
-			ret = getaddrinfo(host, String(port).c_str(), &hints, &res);
+			ret = zsock_getaddrinfo(host, String(port).c_str(), &hints, &res);
 
 			if (ret == 0) {
 				break;
@@ -240,7 +242,7 @@ public:
 		}
 
 		if (!rv && sock_fd >= 0) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 		}
 		return rv;
@@ -294,7 +296,7 @@ public:
 
 	void close() {
 		if (sock_fd != -1) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 		}
 	}
@@ -313,7 +315,7 @@ public:
 		zsock_ioctl(sock_fd, ZFD_IOCTL_FIONBIO);
 
 		if (::bind(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 			return false;
 		}
@@ -327,7 +329,7 @@ public:
 		}
 
 		if (::listen(sock_fd, backlog) < 0) {
-			::close(sock_fd);
+			zsock_close(sock_fd);
 			sock_fd = -1;
 			return false;
 		}
