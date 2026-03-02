@@ -134,7 +134,7 @@
 		status = "okay";
 		/* PB6 PB7 not usable for PWM until dynamic pin muxing works */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
-		pinctrl-0 = <&tim4_ch3_pb8 &tim4_ch4_pb9 &tim4_ch1_pb6 &tim4_ch2_pb7>;
+		pinctrl-0 = <&tim4_ch3_pb8 &tim4_ch4_pb9 /*&tim4_ch1_pb6 &tim4_ch2_pb7*/>;
 		pinctrl-names = "default";
 	};
 };
@@ -273,8 +273,8 @@
 		/* PWM pin mapping - Digital pins with their timer channels */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
 		pwm-pin-gpios =	
-				<&gpiob 7 0>,    /* D0/PB6 - TIM4_CH2 */
-				<&gpiob 6 0>,    /* D1/PB6 - TIM4_CH1 */
+				/*<&gpiob 7 0>,*/    /* D0/PB6 - TIM4_CH2 */
+				/*<&gpiob 6 0>,*/    /* D1/PB6 - TIM4_CH1 */
 				<&gpiob 3 0>,    /* D2/PB3 - TIM2_CH2 */
 				<&gpiob 0 0>,    /* D3/PB0 - TIM3_CH3 */
 				<&gpioa 11 0>,   /* D5/PA11 - TIM1_CH4 */
@@ -305,8 +305,8 @@
 		/* PWM mapping for the digital pins  */
 		/* Currently only the pins marked with ~ on the pin headers are enabled */
 		pwms = 
-		       <&pwm4 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D0/PB7 → TIM4_CH2 */
-		       <&pwm4 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D1/PB6 → TIM4_CH1 */
+		       /*<&pwm4 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,*/   /* D0/PB7 → TIM4_CH2 */
+		       /*<&pwm4 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,*/   /* D1/PB6 → TIM4_CH1 */
 		       <&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D2/PB3 → TIM2_CH2 */
 		       <&pwm3 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D3/PB0 → TIM3_CH3 */
 		       <&pwm1 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D5/PA11 → TIM1_CH4 */
