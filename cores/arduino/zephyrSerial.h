@@ -75,9 +75,11 @@ public:
 	void flush();
 
 	void end() {
+#ifdef CONFIG_DEVICE_DEINIT_SUPPORT
 		if (uart->ops.deinit) {
 			uart->ops.deinit(uart);
 		}
+#endif
 	}
 
 	size_t write(const uint8_t *buffer, size_t size);
