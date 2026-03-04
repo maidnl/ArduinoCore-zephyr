@@ -78,6 +78,8 @@ get_branch_tip() {
 	fetch_and_extract "$url" "${project}-${branch}" "ArduinoCore-zephyr/${folder}/${project}" "$@"
 }
 
+rm -rf ArduinoCore-zephyr/libraries/DebugLog/examples/
+
 ALL_TESTS=$(mktemp)
 search_for_sketches_in ArduinoCore-zephyr/libraries/ >> $ALL_TESTS
 search_for_sketches_in ArduinoCore-zephyr/examples/ >> $ALL_TESTS
