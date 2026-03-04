@@ -116,6 +116,22 @@ protected:
 
 } // namespace arduino
 
+/* Return the index of it if matched, oterwise return an empty string. */
+#define ZARD_SERIAL_MATCH(n, p, i, node)                                                           \
+	COND_CODE_1(DT_SAME_NODE(DT_PHANDLE_BY_IDX(n, p, i), node), (i), ())
+
+/* Only matched device returns non-empty value, so the overall expansion is
+ * matched device's index.
+ */
+#define ZARD_SERIAL_INDEXOF(node)                                                                  \
+	DT_FOREACH_PROP_ELEM_VARGS(DT_PATH(zephyr_user), serials, ZARD_SERIAL_MATCH, node)
+
+/* Serial object associated with the Zephyr console. */
+#define ARDUINO_CONSOLE_SERIAL ZARD_SERIAL_NAME(ZARD_SERIAL_INDEXOF(DT_CHOSEN(zephyr_console)))
+
+/* Serial object associated with the first HW serial (usually on D0/D1). */
+#define ARDUINO_HARDWARE_SERIAL ZARD_SERIAL_NAME(0)
+
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm_serial)
 /* Devicetree requires a SerialUSB object for 'Serial'. */
 #define ZARD_SKIP_FIRST_SERIAL 1
