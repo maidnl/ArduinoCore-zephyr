@@ -509,8 +509,8 @@
 					<&gpioa 4 0>,
 					<&gpioa 5 0>;
 
-		serials = <&board_cdc_acm_uart>, <&usart1>, <&usart2>, <&uart4>, <&usart6>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&usart1>, <&usart2>, <&uart4>, <&usart6>; /* 'Serial1' onwards */
 		i2cs = <&i2c2>, <&i2c4>, <&i2c1>;
 		spis = <&spi1>, <&spi5>;
 		pwms = <&pwm1 3 PWM_HZ(12000000) PWM_POLARITY_NORMAL>,

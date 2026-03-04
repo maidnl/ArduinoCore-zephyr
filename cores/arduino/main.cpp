@@ -24,8 +24,7 @@ void __attribute__((weak)) __loopHook(void) {
 }
 
 int main(void) {
-#if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) &&                                            \
-	 (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS))
+#if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	Serial.begin(115200);
 #endif
 
