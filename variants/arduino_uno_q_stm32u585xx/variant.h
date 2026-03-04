@@ -1,8 +1,19 @@
 /*
  * Copyright (c) 2022 Dhruva Gole
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
+#if !ARDUINO_LIBRARY_DISCOVERY_PHASE
+#if __has_include("Arduino_RouterBridge.h")
+#if __has_include("routerbridge_provides_serial.h")
+#define ARDUINO_ROUTERBRIDGE_PROVIDES_SERIAL
+#else
+#error "Please update the Arduino_RouterBridge library to the latest version to ensure Serial support on this board."
+#endif
+#endif
+#endif
 
 // TODO: correctly handle these legacy defines
 #define MOSI    0
