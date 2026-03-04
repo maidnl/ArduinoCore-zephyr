@@ -146,6 +146,17 @@ protected:
 #endif
 #endif
 
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial)
+/* If the board has an arduino,router-serial node, and the currently used
+ * library has the support, then the 'Serial' object is actually the same as
+ * the Monitor object in the Arduino_RouterBridge library.
+ */
+#define ZARD_SKIP_FIRST_SERIAL              1
+#define ZARD_FIRST_SERIAL_IS_ARDUINO_ROUTER 1
+#define ARDUINO_ROUTER_PHANDLE              DT_PROP(DT_PATH(zephyr_user), arduino_router_serial)
+#define ARDUINO_ROUTER_SERIAL               ZARD_SERIAL_NAME(ZARD_SERIAL_INDEXOF(ARDUINO_ROUTER_PHANDLE))
+#endif
+
 /* Name of a Serial object for a given index. */
 #define ZARD_SERIAL_NAME(n) CONCAT(Serial, ZARD_SERIAL_STEM(n))
 
