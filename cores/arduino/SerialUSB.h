@@ -57,7 +57,6 @@ private:
 };
 } // namespace arduino
 
-#if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) &&                                            \
-	 (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS))
+#if ZARD_FIRST_SERIAL_IS_SERIALUSB
 extern arduino::SerialUSB_ Serial;
 #endif

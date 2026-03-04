@@ -135,8 +135,8 @@
 				<&adc 4>,
 				<&adc 1>;
 
-		serials = <&board_cdc_acm_uart>, <&uart0>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&uart0>; /* 'Serial1' onwards */
 		i2cs = <&arduino_nano_i2c>, <&i2c1>;
 	};
 };

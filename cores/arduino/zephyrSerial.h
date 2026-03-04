@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2022 Dhruva Gole
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -115,26 +116,63 @@ protected:
 
 } // namespace arduino
 
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), serials)
-#if !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) &&                                           \
-	  (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS))
-// If CDC USB, use that object as Serial (and SerialUSB)
-extern arduino::ZephyrSerial Serial;
-#endif
-#if (DT_PROP_LEN(DT_PATH(zephyr_user), serials) > 1)
-#define SERIAL_DEFINED_0                 1
-#define EXTERN_SERIAL_N(i)               extern arduino::ZephyrSerial Serial##i;
-#define DECLARE_EXTERN_SERIAL_N(n, p, i) COND_CODE_1(SERIAL_DEFINED_##i, (), (EXTERN_SERIAL_N(i)))
-
-/* Declare Serial1, Serial2, ... */
-DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), serials, DECLARE_EXTERN_SERIAL_N)
-
-#undef DECLARE_EXTERN_SERIAL_N
-#undef EXTERN_SERIAL_N
-#undef SERIAL_DEFINED_0
-#endif
-#elif DT_NODE_HAS_STATUS(DT_NODELABEL(arduino_serial), okay)
-extern arduino::ZephyrSerial Serial;
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm_serial)
+/* Devicetree requires a SerialUSB object for 'Serial'. */
+#define ZARD_SKIP_FIRST_SERIAL 1
+#if (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS)
+/* SerialUSB can be compiled in the project. */
+#define ZARD_FIRST_SERIAL_IS_SERIALUSB 1
 #else
+/* SerialUSB is required but no driver was enabled for the USB CDC ACM device.
+ * Define a stub Serial object to avoid build errors.
+ */
+#define ZARD_FIRST_SERIAL_IS_STUB 1
+#endif
+#endif
+
+/* Name of a Serial object for a given index. */
+#define ZARD_SERIAL_NAME(n) CONCAT(Serial, ZARD_SERIAL_STEM(n))
+
+/*
+ * Determine the number of generic ZephyrSerial objects to instantiate.
+ */
+
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), serials)
+/* The array property; the total number is the length of the array. */
+#define ZARD_GENERIC_SERIAL_COUNT DT_PROP_LEN(DT_PATH(zephyr_user), serials)
+
+#elif DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(arduino_serial))
+/* A single node with compatible "arduino,serial" is present. */
+#define ZARD_GENERIC_SERIAL_COUNT 1
+
+#elif ZARD_SKIP_FIRST_SERIAL
+/* Only a special Serial is present. */
+#define ZARD_GENERIC_SERIAL_COUNT 0
+
+#else
+/* Neither 'serials' property, nor 'arduino,serial' node, nor a special Serial
+ * is present. Define a stub Serial object to avoid build errors.
+ */
+#define ZARD_GENERIC_SERIAL_COUNT 0
+#define ZARD_SKIP_FIRST_SERIAL    1
+#define ZARD_FIRST_SERIAL_IS_STUB 1
+#endif
+
+#if ZARD_SKIP_FIRST_SERIAL
+// Map index 0 to 'Serial1', index 1 to 'Serial2', etc.
+#define ZARD_SERIAL_STEM(i) UTIL_INC(i)
+#else
+// Map index 0 to 'Serial', index 1 to 'Serial1', etc.
+#define ZARD_SERIAL_STEM(i) COND_CODE_0(i, (), (i))
+#endif
+
+#if ZARD_FIRST_SERIAL_IS_STUB
 extern arduino::ZephyrSerialStub Serial;
+#endif
+
+#if ZARD_GENERIC_SERIAL_COUNT > 0
+/* Declare all generic ZephyrSerial objects */
+#define DECLARE_SERIAL_N(n, s) extern arduino::ZephyrSerial ZARD_SERIAL_NAME(n);
+LISTIFY(ZARD_GENERIC_SERIAL_COUNT, DECLARE_SERIAL_N, ())
+#undef DECLARE_SERIAL_N
 #endif

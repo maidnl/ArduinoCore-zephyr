@@ -26,8 +26,7 @@
 	zephyr,user {
 		digital-pin-gpios = <&hsgpio0 12 GPIO_ACTIVE_LOW>;
 		builtin-led-gpios = <&hsgpio0 12 GPIO_ACTIVE_LOW>;
-		serials = <&board_cdc_acm_uart>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
 		i2cs = <&arduino_i2c>;
 		spis = <&flexcomm1>;
 	};

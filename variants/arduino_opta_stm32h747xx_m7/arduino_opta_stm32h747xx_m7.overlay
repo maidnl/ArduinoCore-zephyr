@@ -112,8 +112,8 @@
 					<&gpiof 6 0>,
 					<&gpiof 4 0>;
 
-		serials = <&board_cdc_acm_uart>, <&usart3>, <&usart6>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&usart3>, <&usart6>; /* 'Serial1' onwards */
 		i2cs = <&i2c3>, <&i2c1>;
 
 		io-channels =	<&adc1 0>,

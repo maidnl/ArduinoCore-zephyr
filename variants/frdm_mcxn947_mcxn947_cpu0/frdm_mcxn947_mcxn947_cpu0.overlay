@@ -28,8 +28,8 @@
 	zephyr,user {
 		digital-pin-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
 		builtin-led-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
-		serials = <&board_cdc_acm_uart>, <&flexcomm4_lpuart4>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&flexcomm4_lpuart4>; /* 'Serial1' onwards */
 		i2cs = <&flexcomm2_lpi2c2>;
 		spis = <&flexcomm1_lpspi1>;
 	};

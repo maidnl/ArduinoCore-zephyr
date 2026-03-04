@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2022 Dhruva Gole
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -189,62 +190,29 @@ void arduino::ZephyrSerial::flush() {
 	}
 }
 
-#if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm))
-#define FIRST_UART_INDEX 1
-#else
-#define FIRST_UART_INDEX 0
-#endif
-
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), serials)
-#if !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) &&                                           \
-	  (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS))
-// If CDC USB, use that object as Serial (and SerialUSB)
-arduino::ZephyrSerial
-	Serial(DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), serials, FIRST_UART_INDEX)));
+#define DEFINE_SERIAL_N(n, p, i)                                                                   \
+	arduino::ZephyrSerial ZARD_SERIAL_NAME(i)(DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)));
+DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), serials, DEFINE_SERIAL_N)
+
+#elif DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(arduino_serial))
+arduino::ZephyrSerial ZARD_SERIAL_NAME(0)(DEVICE_DT_GET(DT_NODELABEL(arduino_serial)));
 #endif
-#if (DT_PROP_LEN(DT_PATH(zephyr_user), serials) > 1)
-#define ARDUINO_SERIAL_DEFINED_0 1
 
-#define DECL_SERIAL_0(n, p, i)
-#define DECL_SERIAL_N(n, p, i)                                                                     \
-	arduino::ZephyrSerial Serial##i(DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)));
-#define DECLARE_SERIAL_N(n, p, i)                                                                  \
-	COND_CODE_1(ARDUINO_SERIAL_DEFINED_##i, (DECL_SERIAL_0(n, p, i)), (DECL_SERIAL_N(n, p, i)))
-
-#define CALL_EVENT_0(n, p, i)
-#define CALL_EVENT_N(n, p, i)                                                                      \
-	if (_CONCAT(Serial, i).available())                                                            \
-		_CONCAT(_CONCAT(serial, i), Event)();
-#define CALL_SERIALEVENT_N(n, p, i)                                                                \
-	COND_CODE_1(ARDUINO_SERIAL_DEFINED_##i, (CALL_EVENT_0(n, p, i)), (CALL_EVENT_N(n, p, i)));
-
-#define DECL_EVENT_0(n, p, i)
-#define DECL_EVENT_N(n, p, i)                                                                      \
-	__attribute__((weak)) void serial##i##Event() {                                                \
-	}
-#define DECLARE_SERIALEVENT_N(n, p, i)                                                             \
-	COND_CODE_1(ARDUINO_SERIAL_DEFINED_##i, (DECL_EVENT_0(n, p, i)), (DECL_EVENT_N(n, p, i)));
-
-DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), serials, DECLARE_SERIAL_N)
-#endif // PROP_LEN(serials) > 1
-#elif DT_NODE_HAS_STATUS(DT_NODELABEL(arduino_serial), okay)
-/* If serials node is not defined, tries to use arduino_serial */
-arduino::ZephyrSerial Serial(DEVICE_DT_GET(DT_NODELABEL(arduino_serial)));
-#else
+#if ZARD_FIRST_SERIAL_IS_STUB
 arduino::ZephyrSerialStub Serial;
 #endif
 
-__attribute__((weak)) void serialEvent() {
-}
-#if (DT_PROP_LEN(DT_PATH(zephyr_user), serials) > 1)
-DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), serials, DECLARE_SERIALEVENT_N)
-#endif
+#define DEFINE_WEAK_SERIALEVENT_N(n, s)                                                            \
+	__attribute__((weak)) void CONCAT(serial, ZARD_SERIAL_STEM(n), Event)() {                      \
+	}
+
+#define CALL_SERIALEVENT_N(n, s)                                                                   \
+	if (ZARD_SERIAL_NAME(n).available())                                                           \
+		CONCAT(serial, ZARD_SERIAL_STEM(n), Event)();
+
+LISTIFY(ZARD_GENERIC_SERIAL_COUNT, DEFINE_WEAK_SERIALEVENT_N, ())
 
 void arduino::serialEventRun(void) {
-	if (Serial.available()) {
-		serialEvent();
-	}
-#if (DT_PROP_LEN(DT_PATH(zephyr_user), serials) > 1)
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), serials, CALL_SERIALEVENT_N)
-#endif
+	LISTIFY(ZARD_GENERIC_SERIAL_COUNT, CALL_SERIALEVENT_N, ())
 }
