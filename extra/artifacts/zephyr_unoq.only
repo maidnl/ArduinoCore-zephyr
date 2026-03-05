@@ -7,3 +7,4 @@
 libraries/Arduino_LED_Matrix/
 libraries/Arduino_RouterBridge/
 libraries/Arduino_RPClite/
+libraries/DebugLog/

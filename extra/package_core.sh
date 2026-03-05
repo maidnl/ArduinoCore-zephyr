@@ -94,7 +94,7 @@ echo ${TEMP_BOARDS} >> ${TEMP_INC}
 echo ${TEMP_PLATFORM} >> ${TEMP_INC}
 declutter_file extra/artifacts/_common.inc >> ${TEMP_INC}
 declutter_file extra/artifacts/$ARTIFACT.inc >> ${TEMP_INC}
-declutter_file extra/artifacts/$ARTIFACT.only >> ${TEMP_INC}
+# $ARTIFACT.only should not be included to prevent duplicates with common
 for variant in $INCLUDED_VARIANTS ; do
 	echo "- ${variant}"
 	echo "variants/${variant}/" >> ${TEMP_INC}
