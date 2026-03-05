@@ -5,9 +5,9 @@
 	path = libraries/Arduino_RPClite
 	url = https://github.com/arduino-libraries/Arduino_RPClite.git
 [submodule "libraries/Arduino_RouterBridge/"]
-	url = https://github.com/pillo79/Arduino_RouterBridge
+	url = https://github.com/pennam/Arduino_RouterBridge
 [submodule "libraries/Arduino_RPClite/"]
 	url = https://github.com/pillo79/Arduino_RPClite
 [submodule "libraries/DebugLog"]
 	path = libraries/DebugLog
-	url = https://github.com/pillo79/DebugLog.git
+	url = https://github.com/pennam/DebugLog.git
