@@ -5,8 +5,8 @@
 # artifact-specific tests for Zephyr CI tests.
 #
 # Two helper functions are provided for easy GitHub queries:
-# - get_branch_tip <repo> <branch> [<path> ...]
-# - get_latest_release <repo> [<path> ...]
+# - get_branch_tip <folder> <repo> <branch> [<path> ...]
+# - get_latest_release <folder> <repo> [<path> ...]
 #
 # By default, the whole project will be added to the test suite.
 # When given additional path arguments, the functions will only
@@ -19,3 +19,5 @@ get_branch_tip libraries arduino-libraries/ArduinoBLE master \
 	examples/Peripheral/Advertising/EnhancedAdvertising \
 	examples/Peripheral/ButtonLED \
 
+# Arduino_RouterBridge
+get_branch_tip libraries arduino-libraries/Arduino_RouterBridge main
