@@ -147,18 +147,18 @@
 				    <&gpioi 8 GPIO_ACTIVE_HIGH>;        /* Analog switch for VREF */
 
 					/* LEDs GBR */
-		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>,
-				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
-				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
-				    <&gpiok 1 GPIO_ACTIVE_HIGH>,
-				    <&gpiog 4 GPIO_ACTIVE_HIGH>,
-				    <&gpiog 5 GPIO_ACTIVE_HIGH>,
-				    <&gpiok 0 GPIO_ACTIVE_HIGH>,
-				    <&gpiod 11 GPIO_ACTIVE_HIGH>,
-				    <&gpiog 8 GPIO_ACTIVE_HIGH>,
-				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
-				    <&gpiog 2 GPIO_ACTIVE_HIGH>;
+		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_LOW>,
+				    <&gpiok 2 GPIO_ACTIVE_LOW>,
+				    <&gpiog 3 GPIO_ACTIVE_LOW>,
+				    <&gpiod 10 GPIO_ACTIVE_LOW>,
+				    <&gpiok 1 GPIO_ACTIVE_LOW>,
+				    <&gpiog 4 GPIO_ACTIVE_LOW>,
+				    <&gpiog 5 GPIO_ACTIVE_LOW>,
+				    <&gpiok 0 GPIO_ACTIVE_LOW>,
+				    <&gpiod 11 GPIO_ACTIVE_LOW>,
+				    <&gpiog 8 GPIO_ACTIVE_LOW>,
+				    <&gpioc 6 GPIO_ACTIVE_LOW>,
+				    <&gpiog 2 GPIO_ACTIVE_LOW>;
 
 		adc-pin-gpios =	<&gpioa  4 0>,
 				    <&gpioa  5 0>,

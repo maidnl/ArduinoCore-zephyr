@@ -400,16 +400,53 @@ static void on_fan_changed(const struct device *dev, void *user_data)
 	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 }
 
+static const struct gpio_dt_spec led0g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 0);
+static const struct gpio_dt_spec led0b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 1);
+static const struct gpio_dt_spec led0r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 2);
+static const struct gpio_dt_spec led1g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 3);
+static const struct gpio_dt_spec led1b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 4);
+static const struct gpio_dt_spec led1r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 5);
+static const struct gpio_dt_spec led2g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 6);
+static const struct gpio_dt_spec led2b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 7);
+static const struct gpio_dt_spec led2r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 8);
+static const struct gpio_dt_spec led3g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 9);
+static const struct gpio_dt_spec led3b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 10);
+static const struct gpio_dt_spec led3r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
+
+static const struct gpio_dt_spec *leds[] = {&led0g, &led0b, &led0r, &led1g, &led1b, &led1r,
+										&led2g, &led2b, &led2r, &led3g, &led3b, &led3r};
+
+void configure_leds(const uint8_t *leds_control_buffer) {
+	for (size_t i = 0; i < sizeof(leds)/sizeof(leds[0]); i++) {
+		const struct gpio_dt_spec *led = leds[i];
+		uint8_t reg = 0x14 + (i/4);
+		uint8_t mask = 0x3 << ((i % 4)*2);
+		gpio_pin_configure_dt(led, GPIO_OUTPUT);
+		gpio_pin_set_dt(led, (backup.leds_control_buffer[reg] & mask) == 0 ? 0 : 1);
+	}
+}
+
 static void on_gpio_changed(const struct device *dev, void *user_data)
 {
 	size_t size = eeprom_target_get_size(dev);
 	eeprom_target_read_data(dev, 0, backup.leds_control_buffer, size);
-	// do stuff with new values
+	// emulate PCA9635
+	configure_leds(backup.leds_control_buffer);
 }
 
 int main(void) {
-
-	printk("Hello world\n");
 
 	/* Linux Ready GPIO input */
 	const struct gpio_dt_spec spec =
@@ -428,7 +465,7 @@ int main(void) {
 	hwinfo_get_reset_cause(&reset_cause_id);
 	if (reset_cause_id == RESET_POR || backup.magic != 0x67F44F76) {
 		printk("Reset EEPROM memory to default values\n");
-		memset(backup.leds_control_buffer, 0xFF, sizeof(backup.leds_control_buffer));
+		memset(backup.leds_control_buffer, 0x0, sizeof(backup.leds_control_buffer));
 		memset(backup.fan_control_buffer, 0xFF, sizeof(backup.fan_control_buffer));
 		backup.magic = 0x67F44F76;
 		backup.fan_control_buffer[0x27] = 0x00; //Drive fail
@@ -461,7 +498,7 @@ int main(void) {
 		printk("Error: PWM device is not ready\n");
 		return 0;
 	}
-	const uint8_t data = backup.fan_control_buffer[0x30];
+	const uint8_t data = 254; //backup.fan_control_buffer[0x30];
 	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 
 	/* TODO Fan TACH input configuration */
@@ -504,53 +541,7 @@ int main(void) {
 	printk("gpio eeprom i2c target driver registered\n");
 
 	/* Restore LEDs values saved in backup RAM */
-	static const struct gpio_dt_spec led0g =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 0);
-	gpio_pin_configure_dt(&led0g, backup.leds_control_buffer[0]);
-
-	static const struct gpio_dt_spec led0b =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 1);
-	gpio_pin_configure_dt(&led0b, backup.leds_control_buffer[1]);
-
-	static const struct gpio_dt_spec led0r =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 2);
-	gpio_pin_configure_dt(&led0r, backup.leds_control_buffer[2]);
-
-	static const struct gpio_dt_spec led1g =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 3);
-	gpio_pin_configure_dt(&led1g, backup.leds_control_buffer[3]);
-
-	static const struct gpio_dt_spec led1b =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 4);
-	gpio_pin_configure_dt(&led1b, backup.leds_control_buffer[4]);
-
-	static const struct gpio_dt_spec led1r =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 5);
-	gpio_pin_configure_dt(&led1r, backup.leds_control_buffer[5]);
-
-	static const struct gpio_dt_spec led2g =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 6);
-	gpio_pin_configure_dt(&led2g, backup.leds_control_buffer[6]);
-
-	static const struct gpio_dt_spec led2b =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 7);
-	gpio_pin_configure_dt(&led2b, backup.leds_control_buffer[7]);
-
-	static const struct gpio_dt_spec led2r =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 8);
-	gpio_pin_configure_dt(&led2r, backup.leds_control_buffer[8]);
-
-	static const struct gpio_dt_spec led3g =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 9);
-	gpio_pin_configure_dt(&led3g, backup.leds_control_buffer[9]);
-
-	static const struct gpio_dt_spec led3b =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 10);
-	gpio_pin_configure_dt(&led3b, backup.leds_control_buffer[10]);
-
-	static const struct gpio_dt_spec led3r =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
-	gpio_pin_configure_dt(&led3r, backup.leds_control_buffer[11]);
+	configure_leds(backup.leds_control_buffer);
 
 	loader(NULL);
 	return 0;
