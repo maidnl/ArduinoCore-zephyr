@@ -1,6 +1,0 @@
-[submodule "libraries/Arduino_RouterBridge"]
-	path = libraries/Arduino_RouterBridge
-	url = https://github.com/arduino-libraries/Arduino_RouterBridge.git
-[submodule "libraries/Arduino_RPClite"]
-	path = libraries/Arduino_RPClite
-	url = https://github.com/arduino-libraries/Arduino_RPClite.git
