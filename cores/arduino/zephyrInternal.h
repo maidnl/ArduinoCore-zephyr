@@ -14,7 +14,9 @@ extern "C" {
 
 void enableInterrupt(pin_size_t);
 void disableInterrupt(pin_size_t);
-
+/* Generic device power and initialization management */
+bool begin_device(const struct device *dev);
+void end_device(const struct device *dev);
 #ifdef __cplusplus
 } // extern "C"
 #endif

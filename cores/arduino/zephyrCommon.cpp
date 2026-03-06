@@ -6,6 +6,45 @@
 
 #include <Arduino.h>
 #include "zephyrInternal.h"
+#include <zephyr/drivers/pinctrl.h>
+
+bool begin_device(const struct device *dev) {
+	if (dev == nullptr) {
+		return false;
+	}
+	
+	if (!device_is_ready(dev)) {
+		
+		/* First call: Boots the device and applies default pinctrl */
+		int err = device_init(dev);
+		if (err < 0) {
+			return false; /* Hardware failed to initialize */
+		}
+	} else {
+		/* Subsequent calls: Wakes the hardware and applies default pinctrl */
+#ifdef CONFIG_PM_DEVICE
+		int err = pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
+		if (err == -EALREADY) {
+			pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
+			pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
+		} else if (err < 0 && err != -ENOTSUP && err != -ENOSYS) {
+			return false;
+		}
+#endif
+	}
+	return true;
+}
+
+void end_device(const struct device *dev) {
+	if (dev == nullptr) {
+		return;
+	}
+
+	/* Suspends the hardware clock and applies the sleep pinctrl state */
+#ifdef CONFIG_PM_DEVICE
+	pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
+#endif
+}
 
 static const struct gpio_dt_spec arduino_pins[] = {
 	DT_FOREACH_PROP_ELEM_SEP(
@@ -53,7 +92,7 @@ constexpr size_t is_first_appearance(const size_t &idx, const size_t &at, const 
 
 #define GET_DEVICE_VARGS(n, p, i, _) DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, p, i))
 #define FIRST_APPEARANCE(n, p, i)                                                                  \
-	is_first_appearance(0, i, ((size_t)-1), DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, p, i)),           \
+	is_first_appearance(0, i, ((size_t) - 1), DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, p, i)),         \
 						DT_FOREACH_PROP_ELEM_SEP_VARGS(n, p, GET_DEVICE_VARGS, (, ), 0))
 const int port_num = sum_of_list(
 	0, DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), digital_pin_gpios,
@@ -141,6 +180,23 @@ size_t pwm_pin_index(pin_size_t pinNumber) {
 	}
 	return (size_t)-1;
 }
+
+
+/* Single macro to define the pinctrl struct given a node_id */
+#define DEFINE_PWM_PINCTRL(node_id) PINCTRL_DT_DEFINE(node_id);
+
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_pwm)
+DT_FOREACH_STATUS_OKAY(st_stm32_pwm, DEFINE_PWM_PINCTRL)
+#endif
+
+#if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_pwm)
+DT_FOREACH_STATUS_OKAY(nordic_nrf_pwm, DEFINE_PWM_PINCTRL)
+#endif
+
+#define PWM_PINCTRL_CFG(n, p, i) PINCTRL_DT_DEV_CONFIG_GET(DT_PWMS_CTLR_BY_IDX(n, i)),
+
+static const struct pinctrl_dev_config *arduino_pwm_pcfg[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_PINCTRL_CFG)};
 
 #endif // CONFIG_PWM
 
@@ -308,9 +364,11 @@ void analogWrite(pin_size_t pinNumber, int value) {
 		return;
 	}
 
-	if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
+	if (!begin_device(arduino_pwm[idx].dev)) {
 		return;
 	}
+
+	pinctrl_apply_state(arduino_pwm_pcfg[idx], PINCTRL_STATE_DEFAULT);
 
 	value = map(value, 0, 1 << _analog_write_resolution, 0, arduino_pwm[idx].period);
 

@@ -366,3 +366,7 @@ FORCE_EXPORT_SYM(fs_mkfs);
 FORCE_EXPORT_SYM(fs_register);
 FORCE_EXPORT_SYM(fs_unregister);
 #endif
+
+#if defined(CONFIG_PM_DEVICE)
+FORCE_EXPORT_SYM(pm_device_action_run);
+#endif

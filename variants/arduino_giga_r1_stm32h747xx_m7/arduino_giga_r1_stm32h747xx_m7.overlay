@@ -51,8 +51,11 @@
 
 &i2c1 {
 	status = "okay";
+	zephyr,deferred-init;
+
 	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_pb8 &analog_pb9>;
+	pinctrl-names = "default", "sleep";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -100,12 +103,15 @@
 
 &timers4 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm4: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <&tim4_ch2_pd13 &tim4_ch3_pb8 &tim4_ch4_pb9>;
-		pinctrl-names = "default";
+		pinctrl-1 = <&analog_pd13 &analog_pb8 &analog_pb9>;	
+		pinctrl-names = "default", "sleep";
 	};
 };
 

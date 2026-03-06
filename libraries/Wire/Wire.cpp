@@ -7,6 +7,7 @@
 #include <Wire.h>
 #include <stddef.h>
 #include <zephyr/sys/util_macro.h>
+#include <zephyrInternal.h>
 
 // Helper function to get ZephyrI2C instance from config pointer.
 static arduino::ZephyrI2C *getInstance(struct i2c_target_config *config) {
@@ -57,9 +58,16 @@ arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg({0}), i2c_dev(
 }
 
 void arduino::ZephyrI2C::begin() {
+	if (!begin_device(i2c_dev)) {
+		return;
+	}
 }
 
 void arduino::ZephyrI2C::begin(uint8_t slaveAddr) {
+	if (!begin_device(i2c_dev)) {
+		return;
+	}
+
 	i2c_cfg.address = slaveAddr;
 	i2c_cfg.callbacks = &target_callbacks;
 
@@ -73,6 +81,7 @@ void arduino::ZephyrI2C::end() {
 		i2c_target_unregister(i2c_dev, &i2c_cfg);
 		memset(&i2c_cfg, 0, sizeof(i2c_cfg));
 	}
+	end_device(i2c_dev);
 }
 
 void arduino::ZephyrI2C::setClock(uint32_t freq) {

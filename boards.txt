@@ -29,7 +29,7 @@ giga.build.fpu=-mfpu=fpv5-d16
 giga.build.architecture=cortex-m7
 
 giga.build.float-abi=-mfloat-abi=softfp
-giga.build.extra_flags=
+giga.build.extra_flags=-DCONFIG_PM_DEVICE
 giga.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 giga.build.architecture=cortex-m7
 giga.build.board=GIGA
