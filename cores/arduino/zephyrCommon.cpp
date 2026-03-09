@@ -8,41 +8,71 @@
 #include "zephyrInternal.h"
 #include <zephyr/drivers/pinctrl.h>
 
-bool begin_device(const struct device *dev) {
+bool begin_device(const struct device *dev, const struct pinctrl_dev_config *pcfg /* = nullptr */) {
 	if (dev == nullptr) {
 		return false;
 	}
-	
+
 	if (!device_is_ready(dev)) {
-		
-		/* First call: Boots the device and applies default pinctrl */
+
+		/* boots the device and applies default pinctrl */
 		int err = device_init(dev);
 		if (err < 0) {
 			return false; /* Hardware failed to initialize */
 		}
 	} else {
-		/* Subsequent calls: Wakes the hardware and applies default pinctrl */
+		/* if the device is already booted wakes the hardware and applies
+		 * default pinctrl */
 #ifdef CONFIG_PM_DEVICE
 		int err = pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
+
 		if (err == -EALREADY) {
+			/* power management is supported but the device was
+			 * never suspended. Make a dummy suspension and
+			 * subsequent resume to activate pinctrl */
 			pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
 			pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
-		} else if (err < 0 && err != -ENOTSUP && err != -ENOSYS) {
+		} else if (err == -ENOSYS || err == -ENOTSUP) {
+			/* driver does not implement power management support
+			 * so apply pinctrl manually */
+			if (pcfg != nullptr) {
+				pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
+			}
+		} else if (err < 0) {
+			/* actual error */
 			return false;
+		}
+#else
+		/* power management is not supported -> apply pinctrl default
+		 * state */
+		if (pcfg != nullptr) {
+			pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
 		}
 #endif
 	}
 	return true;
 }
 
-void end_device(const struct device *dev) {
+void end_device(const struct device *dev, const struct pinctrl_dev_config *pcfg /*= nullptr*/) {
 	if (dev == nullptr) {
 		return;
 	}
 
 	/* Suspends the hardware clock and applies the sleep pinctrl state */
 #ifdef CONFIG_PM_DEVICE
-	pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
+	int err = pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
+	/* if pinctrl is not supported put the pin in sleep state */
+	if (err == -ENOSYS || err == -ENOTSUP) {
+		if (pcfg != nullptr) {
+			pinctrl_apply_state(pcfg, PINCTRL_STATE_SLEEP);
+		}
+	}
+#else
+	/* power management is not supporte -> apply pinctrl sleep state*/
+	if (pcfg != nullptr) {
+		pinctrl_apply_state(pcfg, PINCTRL_STATE_SLEEP);
+	}
+
 #endif
 }
 
@@ -181,10 +211,10 @@ size_t pwm_pin_index(pin_size_t pinNumber) {
 	return (size_t)-1;
 }
 
-
 /* Single macro to define the pinctrl struct given a node_id */
 #define DEFINE_PWM_PINCTRL(node_id) PINCTRL_DT_DEFINE(node_id);
 
+/* find only st_stm32 pwm */
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_pwm)
 DT_FOREACH_STATUS_OKAY(st_stm32_pwm, DEFINE_PWM_PINCTRL)
 #endif
@@ -363,12 +393,10 @@ void analogWrite(pin_size_t pinNumber, int value) {
 	if (idx >= ARRAY_SIZE(arduino_pwm)) {
 		return;
 	}
-
-	if (!begin_device(arduino_pwm[idx].dev)) {
+	/* wake the timer (if PM supported) and apply pinctrl */
+	if (!begin_device(arduino_pwm[idx].dev, arduino_pwm_pcfg[idx])) {
 		return;
 	}
-
-	pinctrl_apply_state(arduino_pwm_pcfg[idx], PINCTRL_STATE_DEFAULT);
 
 	value = map(value, 0, 1 << _analog_write_resolution, 0, arduino_pwm[idx].period);
 
