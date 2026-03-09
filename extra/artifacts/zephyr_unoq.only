@@ -4,4 +4,7 @@
 # Files listed here are included by this package only, and automatically
 # excluded by all other artifacts.
 
+# Shadow the actual DebugLog library which does not work on the UNO Q
+cores/arduino/DebugLog.h
+
 libraries/Arduino_LED_Matrix/
