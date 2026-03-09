@@ -13,11 +13,11 @@
 # copy artifacts under the provided paths.
 
 # ArduinoBLE
-get_branch_tip libraries arduino-libraries/ArduinoBLE master \
+get_branch_tip libraries pillo79/ArduinoBLE pr-fix-hci-overlap \
 	examples/Central/LedControl \
 	examples/Central/Scan \
 	examples/Peripheral/Advertising/EnhancedAdvertising \
 	examples/Peripheral/ButtonLED \
 
 # Arduino_RouterBridge
-get_branch_tip libraries arduino-libraries/Arduino_RouterBridge main
+get_branch_tip libraries pillo79/Arduino_RouterBridge singleton_in_cpp
