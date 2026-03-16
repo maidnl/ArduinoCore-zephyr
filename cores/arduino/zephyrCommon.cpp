@@ -9,7 +9,11 @@
 #include <zephyr/drivers/pinctrl.h>
 
 bool begin_device(const struct device *dev, const struct pinctrl_dev_config *pcfg /* = nullptr */) {
+	bool apply_pinctrl = false;
+
+	/* if dev is null we suppose it is */
 	if (dev == nullptr) {
+		/* TO DO: do we need to apply pinctrl also here ? */
 		return false;
 	}
 
@@ -35,9 +39,7 @@ bool begin_device(const struct device *dev, const struct pinctrl_dev_config *pcf
 		} else if (err == -ENOSYS || err == -ENOTSUP) {
 			/* driver does not implement power management support
 			 * so apply pinctrl manually */
-			if (pcfg != nullptr) {
-				pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
-			}
+			apply_pinctrl = true;
 		} else if (err < 0) {
 			/* actual error */
 			return false;
@@ -45,11 +47,15 @@ bool begin_device(const struct device *dev, const struct pinctrl_dev_config *pcf
 #else
 		/* power management is not supported -> apply pinctrl default
 		 * state */
+		apply_pinctrl = true;
+#endif
+	}
+	if (apply_pinctrl) {
 		if (pcfg != nullptr) {
 			pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
 		}
-#endif
 	}
+
 	return true;
 }
 
