@@ -71,8 +71,8 @@
 				    <&gpioe 14 GPIO_ACTIVE_HIGH>, /* A4 - PE14 */
 				    <&gpioe 15 GPIO_ACTIVE_HIGH>, /* A5 - PE15 */
 
-				    <&gpioh 11 GPIO_ACTIVE_HIGH>,  /* D20 - PH11 */
-				    <&gpioh 12 GPIO_ACTIVE_HIGH>,  /* D21 - PH12 */
+				    <&gpioh 10 GPIO_ACTIVE_HIGH>,  /* D20 - PH10 */
+				    <&gpioh 11 GPIO_ACTIVE_HIGH>,  /* D21 - PH11 */
 
 					/* JSPI */
 				    <&gpioc 10 GPIO_ACTIVE_HIGH>,
@@ -169,7 +169,7 @@
 
 		serials = <&board_cdc_acm_uart>, <&usart3>;
 		cdc-acm = <&board_cdc_acm_uart>;
-		i2cs = <&i2c2>, <&i2c4>, <&i2c3>;
+		i2cs = <&i2c2>, <&i2c4_bitbanged>, <&i2c3>;
 		spis = <&spi2>, <&spi3>;
 
 		pwms = <>;
