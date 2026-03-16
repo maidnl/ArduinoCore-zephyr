@@ -60,7 +60,7 @@ public:
 		zsock_ioctl(_socket, ZFD_IOCTL_FIONBIO);
 
 		if (::bind(_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-			::close(_socket);
+			zsock_close(_socket);
 			_socket = -1;
 			return false;
 		}
@@ -89,7 +89,7 @@ public:
 	// Finish with the UDP socket
 	virtual void stop() {
 		if (_socket != -1) {
-			::close(_socket);
+			zsock_close(_socket);
 			_socket = -1;
 		}
 	}
