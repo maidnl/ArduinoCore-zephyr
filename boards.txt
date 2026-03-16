@@ -832,10 +832,6 @@ ventunoq.menu.link_mode.static=Static
 ventunoq.menu.link_mode.static.build.link_mode=static
 ventunoq.menu.link_mode.static.upload.extension=bin-zsk.bin
 
-ventunoq.menu.flash_mode.flash=Flash
-ventunoq.menu.flash_mode.flash.openocd_cfg=flash_sketch.cfg
-ventunoq.menu.flash_mode.ram=RAM
-ventunoq.menu.flash_mode.ram.openocd_cfg=flash_sketch_ram.cfg
 ventunoq.menu.wait_linux_boot.yes=Wait for Linux
 ventunoq.menu.wait_linux_boot.no=Immediate
 ventunoq.menu.wait_linux_boot.no.build.boot_mode=immediate

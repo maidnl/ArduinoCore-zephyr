@@ -187,7 +187,6 @@ SYS_INIT(maybe_flash_bootloader, POST_KERNEL, CONFIG_FILE_SYSTEM_INIT_PRIORITY);
 #include "../variants/arduino_uno_q_stm32u585xx/variant.h"
 #include <stm32_ll_adc.h>
 #include <zephyr/devicetree.h>
-#include <cannectivity/usb/class/gs_usb.h>
 
 int analog_reference(uint8_t reference) {
 	uint8_t init_status;
@@ -218,6 +217,9 @@ int analog_reference(uint8_t reference) {
 		return 0;
 	}
 
+	// TODO: change the defines so in variant.h we can use the ST definition
+	// Doesn't work for UNOQ at the moment ¯\_(ツ)_/¯
+
 	uint32_t voltageScaling = SYSCFG_VREFBUF_VOLTAGE_SCALE3;
 	switch (reference) {
 	case AR_INTERNAL2V5:
@@ -244,6 +246,19 @@ int analog_reference(uint8_t reference) {
 }
 
 EXPORT_SYMBOL(analog_reference);
+
+int disable_vrefbuf() {
+	// This is the safe HW configuration
+	return analog_reference(AR_DEFAULT);
+}
+
+SYS_INIT(disable_vrefbuf, POST_KERNEL, 0);
+#endif
+
+
+#if defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
+
+#include <cannectivity/usb/class/gs_usb.h>
 
 static const struct gs_usb_ops gs_usb_ops = {
 #ifdef CONFIG_CANNECTIVITY_TIMESTAMP
@@ -291,10 +306,175 @@ int enable_cannectivity() {
 
 SYS_INIT(enable_cannectivity, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
-int disable_vrefbuf() {
-	// This is the safe HW configuration
-	return analog_reference(AR_DEFAULT);
+#include <zephyr/drivers/hwinfo.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/i2c.h>
+
+static const struct device *fan_eeprom = DEVICE_DT_GET(DT_NODELABEL(fan_control));
+static const struct device *gpio_eeprom = DEVICE_DT_GET(DT_NODELABEL(gpio_control));
+static const struct device *fan_pwm = DEVICE_DT_GET(DT_NODELABEL(pwm16));
+static const struct device *fan_tach = DEVICE_DT_GET(DT_NODELABEL(pwm14));
+
+struct backup_store {
+	uint32_t magic;
+	uint8_t fan_control_buffer[256];
+	uint8_t leds_control_buffer[256];
+};
+__stm32_backup_sram_section struct backup_store backup;
+
+static void on_fan_changed(const struct device *dev, void *user_data)
+{
+	size_t size = eeprom_target_get_size(dev);
+	/* Read all eeprom memory and backup it */
+	eeprom_target_read_data(dev, 0, backup.fan_control_buffer, size);
+	/* Read fan speed and set PWM value */
+	const uint8_t data = backup.fan_control_buffer[0x30];
+	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
 }
 
-SYS_INIT(disable_vrefbuf, POST_KERNEL, 0);
+static const struct gpio_dt_spec led0g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 0);
+static const struct gpio_dt_spec led0b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 1);
+static const struct gpio_dt_spec led0r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 2);
+static const struct gpio_dt_spec led1g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 3);
+static const struct gpio_dt_spec led1b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 4);
+static const struct gpio_dt_spec led1r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 5);
+static const struct gpio_dt_spec led2g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 6);
+static const struct gpio_dt_spec led2b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 7);
+static const struct gpio_dt_spec led2r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 8);
+static const struct gpio_dt_spec led3g =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 9);
+static const struct gpio_dt_spec led3b =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 10);
+static const struct gpio_dt_spec led3r =
+		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
+
+static const struct gpio_dt_spec *leds[] = {&led0g, &led0b, &led0r, &led1g, &led1b, &led1r,
+										&led2g, &led2b, &led2r, &led3g, &led3b, &led3r};
+
+void configure_leds(const uint8_t *leds_control_buffer) {
+	for (size_t i = 0; i < sizeof(leds)/sizeof(leds[0]); i++) {
+		const struct gpio_dt_spec *led = leds[i];
+		uint8_t reg = 0x14 + (i/4);
+		uint8_t mask = 0x3 << ((i % 4)*2);
+		gpio_pin_configure_dt(led, GPIO_OUTPUT);
+		gpio_pin_set_dt(led, (backup.leds_control_buffer[reg] & mask) == 0 ? 0 : 1);
+	}
+}
+
+static void on_gpio_changed(const struct device *dev, void *user_data)
+{
+	size_t size = eeprom_target_get_size(dev);
+	eeprom_target_read_data(dev, 0, backup.leds_control_buffer, size);
+	// emulate PCA9635
+	configure_leds(backup.leds_control_buffer);
+}
+
+int system_utilities(void) {
+
+	/* Linux Ready GPIO input */
+	const struct gpio_dt_spec spec =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
+	gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
+
+	/* Backup memory */
+	const struct device *const backup_memory = DEVICE_DT_GET_ONE(st_stm32_backup_sram);
+	if (!device_is_ready(backup_memory)) {
+		printk("ERROR: BackUp SRAM device is not ready\n");
+		return 0;
+	}
+
+	/* Initializize controllers values to default at power ON */
+	uint32_t reset_cause_id = 0;
+	hwinfo_get_reset_cause(&reset_cause_id);
+	if (reset_cause_id == RESET_POR || backup.magic != 0x67F44F76) {
+		printk("Reset EEPROM memory to default values\n");
+		memset(backup.leds_control_buffer, 0x0, sizeof(backup.leds_control_buffer));
+		memset(backup.fan_control_buffer, 0xFF, sizeof(backup.fan_control_buffer));
+		backup.magic = 0x67F44F76;
+		backup.fan_control_buffer[0x27] = 0x00; //Drive fail
+		backup.fan_control_buffer[0x30] = 0x66; //Fan 1 drive
+		backup.fan_control_buffer[0x38] = 0x66; //Fan 1 min drive
+		backup.fan_control_buffer[0x3E] = 0xFF; //Fan 1 tach msb
+		backup.fan_control_buffer[0x3F] = 0xF8; //Fan 1 tach lsb
+		backup.fan_control_buffer[0x40] = 0x00; //Fan 2 drive
+		backup.fan_control_buffer[0x48] = 0x66; //Fan 2 min drive
+		backup.fan_control_buffer[0x4E] = 0xFF; //Fan 2 tach msb
+		backup.fan_control_buffer[0x4F] = 0xF8; //Fan 2 tach lsb
+		backup.fan_control_buffer[0x50] = 0x00; //Fan 3 drive
+		backup.fan_control_buffer[0x58] = 0x66; //Fan 3 min drive
+		backup.fan_control_buffer[0x5E] = 0xFF; //Fan 3 tach msb
+		backup.fan_control_buffer[0x5F] = 0xF8; //Fan 3 tach lsb
+		backup.fan_control_buffer[0x60] = 0x00; //Fan 4 drive
+		backup.fan_control_buffer[0x68] = 0x66; //Fan 4 min drive
+		backup.fan_control_buffer[0x6E] = 0xFF; //Fan 4 tach msb
+		backup.fan_control_buffer[0x6F] = 0xF8; //Fan 4 tach lsb
+		backup.fan_control_buffer[0x70] = 0x00; //Fan 5 drive
+		backup.fan_control_buffer[0x78] = 0x66; //Fan 5 min drive
+		backup.fan_control_buffer[0x7E] = 0xFF; //Fan 5 tach msb
+		backup.fan_control_buffer[0x7F] = 0xF8; //Fan 5 tach lsb
+	}
+	backup.fan_control_buffer[0xFD] = 0x34; //Product
+	backup.fan_control_buffer[0xFE] = 0x5D; //Vendor
+
+	/* Fan PWM out configuration */
+	if (!device_is_ready(fan_pwm)) {
+		printk("Error: PWM device is not ready\n");
+		return 0;
+	}
+	const uint8_t data = 254; //backup.fan_control_buffer[0x30];
+	pwm_set(fan_pwm, 1, PWM_USEC(2550), PWM_USEC(data * 10), PWM_POLARITY_NORMAL);
+
+	/* TODO Fan TACH input configuration */
+	if (!device_is_ready(fan_tach)) {
+		printk("device is not ready\n");
+		return 0;
+	}
+
+	/* Fan controller EEPROM driver configuration */
+    if (!device_is_ready(fan_eeprom)) {
+		printk("fan eeprom device not ready\n");
+		return 0;
+	}
+	eeprom_target_set_changed_callback(fan_eeprom, on_fan_changed, NULL);
+
+	if (i2c_target_driver_register(fan_eeprom) < 0) {
+		printk("Failed to register fan i2c eeprom target driver\n");
+		return 0;
+	}
+	printk("fan eeprom i2c target driver registered\n");
+
+	unsigned int size = eeprom_target_get_size(fan_eeprom);
+	eeprom_target_write_data(fan_eeprom, 0, backup.fan_control_buffer, size);
+	printk("fan eeprom i2c target driver default values set\n");
+
+	/* GPIO expander EEPROM driver configuration */
+	if (!device_is_ready(gpio_eeprom)) {
+		printk("gpio eeprom device not ready\n");
+		return 0;
+	}
+	eeprom_target_set_changed_callback(gpio_eeprom, on_gpio_changed, NULL);
+
+	if (i2c_target_driver_register(gpio_eeprom) < 0) {
+		printk("Failed to register gpio i2c eeprom target driver\n");
+		return 0;
+	}
+
+	size = eeprom_target_get_size(gpio_eeprom);
+	eeprom_target_write_data(gpio_eeprom, 0, backup.leds_control_buffer, size);
+	printk("gpio eeprom i2c target driver registered\n");
+
+	/* Restore LEDs values saved in backup RAM */
+	configure_leds(backup.leds_control_buffer);
+}
+SYS_INIT(system_utilities, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+
 #endif
