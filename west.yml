@@ -22,8 +22,8 @@ manifest:
 
   projects:
     - name: zephyr
-      remote: bcmi
-      revision: h5f5
+      remote: arduino
+      revision: monza
       import:
         name-allowlist:
           - cmsis
