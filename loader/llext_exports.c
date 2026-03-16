@@ -360,7 +360,7 @@ FORCE_EXPORT_SYM(__aeabi_dcmpge);
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE)
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 FORCE_EXPORT_SYM(matrixBegin);
 FORCE_EXPORT_SYM(matrixWrite);
 FORCE_EXPORT_SYM(matrixPlay);

@@ -181,7 +181,7 @@ SYS_INIT(maybe_flash_bootloader, POST_KERNEL, CONFIG_FILE_SYSTEM_INIT_PRIORITY);
 
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE)
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 #include "matrix.inc"
 
 #include "../variants/arduino_uno_q_stm32u585xx/variant.h"
