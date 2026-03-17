@@ -51,11 +51,11 @@
 
 &i2c1 {
 	status = "okay";
-	zephyr,deferred-init;
 
-	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
+	pinctrl-0 = <&analog_pb8 &analog_pb9>;
 	pinctrl-1 = <&analog_pb8 &analog_pb9>;
-	pinctrl-names = "default", "sleep";
+	pinctrl-2 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -103,15 +103,14 @@
 
 &timers4 {
 	status = "okay";
-	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm4: pwm {
 		status = "okay";
-		zephyr,deferred-init;
-		pinctrl-0 = <&tim4_ch2_pd13 &tim4_ch3_pb8 &tim4_ch4_pb9>;
+		pinctrl-0 = <>;
 		pinctrl-1 = <&analog_pd13 &analog_pb8 &analog_pb9>;	
-		pinctrl-names = "default", "sleep";
+		pinctrl-2 = <&tim4_ch2_pd13 &tim4_ch3_pb8 &tim4_ch4_pb9>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -534,6 +533,17 @@
 			   /* <&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>, */
 			   /* <&pwm12 1 PWM_HZ(500) PWM_POLARITY_NORMAL>; */
    			   <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>;
+      pwm-pinctrl-idx = <0>, 
+								<0>, // pwm2 PA3
+								<1>, // PWM2 PA4
+								<0>, // PWM8 PJ8
+								<0>, // PWM3 PA7
+								<0>, // PWM4 PD13
+								<1>, // PWM3 PB4
+								<1>, // PWM4 PB8
+								<2>, // PWM4 PB9
+								<2>; // PWM1 PJ11
+							
 
 		io-channels =	<&adc1 4>,
 				<&adc1 8>,
@@ -549,6 +559,9 @@
 				<&adc1 0>,
 				<&adc1 18>,
 				<&adc1 19>;
+
+		 adc-pinctrl-idx = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <0>, <1>, <8>,
+			 <9>, <10>, <11>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;

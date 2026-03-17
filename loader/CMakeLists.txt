@@ -12,10 +12,12 @@ set(EXTRA_CONF_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TAR
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project(app LANGUAGES C CXX)
 
+
+project(app LANGUAGES C CXX)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
 
+zephyr_compile_options(-DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
 # Memory region relocation based on Kconfig
 # Relocate LLEXT heap if region specified
 if(NOT "${CONFIG_LLEXT_HEAP_REGION}" STREQUAL "")
@@ -38,5 +40,6 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
 FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
+target_compile_definitions(app PUBLIC PINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
 
 target_link_libraries(app PUBLIC blobs)

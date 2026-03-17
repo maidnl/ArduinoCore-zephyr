@@ -5,64 +5,196 @@
  */
 
 #include <Arduino.h>
+#include <cstdint>
 #include "zephyrInternal.h"
 #include <zephyr/drivers/pinctrl.h>
+#include <zephyr/devicetree.h>
 
-bool begin_device(const struct device *dev, const struct pinctrl_dev_config *pcfg /* = nullptr */) {
-	bool apply_pinctrl = false;
+extern const uint8_t arduino_pwm_pinctrl_idx[];
+extern const uint8_t arduino_adc_pinctrl_idx[];
 
-	/* if dev is null we suppose it is */
+#if defined(ARDUINO)
+/*
+ * The global ARDUINO macro is numeric (e.g. 10607) in Arduino builds.
+ * Temporarily hide it so pinctrl token concatenation can use the literal
+ * custom state name "ARDUINO" from devicetree pinctrl-names.
+ * Otherwise, the generated pinctrl state identifiers would be like PINCTRL_STATE_10607 instead of
+ * PINCTRL_STATE_ARDUINO.
+ */
+#pragma push_macro("ARDUINO")
+#undef ARDUINO
+#endif
+
+/* COND_CODE_1 insert the code defined in the second argument if the first
+ * argument is true (otherwise it uses the third argument)  */
+
+#define PINCTRL_DEFINE_IF_PRESENT(node_id)                                                         \
+	COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEFINE(node_id);), ())
+
+/* Invoque the argument macro for each node which has status okay in the DT
+ * Since the macro argument uses COND_CODE_1 this means that the invocation is
+ * further "restricted" only for nodes which have pinctrl-0 defined
+ * So for each node which is okay and has pinctrl-0 it is called
+ * PINCTRL_DT_DEFINE which defines and initialize the pin control configuration
+ * for the device at node id
+ * */
+DT_FOREACH_STATUS_OKAY_NODE(PINCTRL_DEFINE_IF_PRESENT)
+
+/* structure that holds device and pinctrl configuration */
+struct pinctrl_map_entry {
+	const struct device *dev;
+	const struct pinctrl_dev_config *pcfg;
+};
+
+/* Macros to safely extract devices depending on how they are defined in DT */
+#define MAP_ENTRY_PWM(n, p, i)                                                                     \
+	{DEVICE_DT_GET(DT_PWMS_CTLR_BY_IDX(n, i)),                                                     \
+	 PINCTRL_DT_DEV_CONFIG_GET(DT_PWMS_CTLR_BY_IDX(n, i))},
+#define MAP_ENTRY_ADC(n, p, i)                                                                     \
+	{DEVICE_DT_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i)),                                              \
+	 PINCTRL_DT_DEV_CONFIG_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i))},
+#define MAP_ENTRY_PHANDLE(n, p, i)                                                                 \
+	{DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)),                                                    \
+	 PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE_BY_IDX(n, p, i))},
+
+static const struct pinctrl_map_entry pinctrl_map[] = {
+/* Only map PWMs if enabled */
+#ifdef CONFIG_PWM
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, MAP_ENTRY_PWM)
+#endif
+
+/* Only map ADCs if enabled */
+#ifdef CONFIG_ADC
+		DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, MAP_ENTRY_ADC)
+#endif
+
+/* Only map I2C/SPI/UART if defined in zephyr,user */
+#if defined(CONFIG_I2C) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), i2cs)
+			DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), i2cs, MAP_ENTRY_PHANDLE)
+#endif
+
+#if defined(CONFIG_SPI) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), spis)
+				DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), spis, MAP_ENTRY_PHANDLE)
+#endif
+
+#if defined(CONFIG_SERIAL) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), uarts)
+					DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), uarts, MAP_ENTRY_PHANDLE)
+#endif
+
+#if defined(CONFIG_DAC) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac)
+						{DEVICE_DT_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac)),
+						 PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac))},
+#endif
+
+	{NULL, NULL} /* Terminate the array */
+};
+#if defined(ARDUINO)
+#pragma pop_macro("ARDUINO")
+#endif
+/* --- 3. The Auto-Detect Function (KEEP THIS!) --- */
+static const struct pinctrl_dev_config *get_known_pcfg(const struct device *dev) {
+	for (size_t i = 0; i < ARRAY_SIZE(pinctrl_map); i++) {
+		if (pinctrl_map[i].dev == dev) {
+			return pinctrl_map[i].pcfg;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * @brief Apply a single pin from a custom pinctrl state.
+ */
+int arduino_pinctrl_pin(const struct pinctrl_dev_config *pcfg, uint8_t pin_sub_idx,
+						uint8_t state_id = PINCTRL_STATE_ARDUINO) {
+	if (pcfg == nullptr) {
+		return -EINVAL;
+	}
+
+	const struct pinctrl_state *state;
+
+	/* Look up the requested state */
+	int err = pinctrl_lookup_state(pcfg, state_id, &state);
+	if (err < 0) {
+		return err; /* Fails if the state is not defined in pinctrl-names */
+	}
+
+	/* bounds check */
+	if (pin_sub_idx >= state->pin_cnt) {
+		return -EINVAL;
+	}
+
+	/* extract register securely */
+#ifdef CONFIG_PINCTRL_STORE_REG
+	uintptr_t reg = pcfg->reg;
+#else
+	uintptr_t reg = PINCTRL_REG_NONE;
+#endif
+
+	/* apply only this specific pin */
+	return pinctrl_configure_pins(&state->pins[pin_sub_idx], 1, reg);
+}
+
+/**
+ * @brief Initialize a device (if needed) and apply a pinctrl configuration
+ * either on a single pin (for "devices" that can be addressed as single pin
+ * like ADC or PWM) or on all the pin used by the Peripheral (like I2C or SPI)
+ */
+bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
+
 	if (dev == nullptr) {
-		/* TO DO: do we need to apply pinctrl also here ? */
 		return false;
 	}
 
+	const struct pinctrl_dev_config *pcfg = nullptr;
+
+	/* find pinctrl configuration using device and look-up table pinctrl_map
+	 * which associates a device to its pinctrl */
+	pcfg = get_known_pcfg(dev);
+
+	/* Initialize the device if not already is */
 	if (!device_is_ready(dev)) {
-
-		/* boots the device and applies default pinctrl */
-		int err = device_init(dev);
-		if (err < 0) {
-			return false; /* Hardware failed to initialize */
-		}
-	} else {
-		/* if the device is already booted wakes the hardware and applies
-		 * default pinctrl */
-#ifdef CONFIG_PM_DEVICE
-		int err = pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
-
-		if (err == -EALREADY) {
-			/* power management is supported but the device was
-			 * never suspended. Make a dummy suspension and
-			 * subsequent resume to activate pinctrl */
-			pm_device_action_run(dev, PM_DEVICE_ACTION_SUSPEND);
-			pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
-		} else if (err == -ENOSYS || err == -ENOTSUP) {
-			/* driver does not implement power management support
-			 * so apply pinctrl manually */
-			apply_pinctrl = true;
-		} else if (err < 0) {
-			/* actual error */
+		if (device_init(dev) < 0) {
 			return false;
 		}
-#else
-		/* power management is not supported -> apply pinctrl default
-		 * state */
-		apply_pinctrl = true;
+	} else {
+#ifdef CONFIG_PM_DEVICE
+		int err = pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
+		if (err < 0 && err != -EALREADY && err != -ENOSYS && err != -ENOTSUP) {
+			return false;
+		}
 #endif
 	}
-	if (apply_pinctrl) {
-		if (pcfg != nullptr) {
-			pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
+	/* apply pinctrl configuration */
+	if (pcfg != nullptr) {
+		if (pin_sub_idx >= 0) {
+			/* on single pin */
+			if (arduino_pinctrl_pin(pcfg, (uint8_t)pin_sub_idx, PINCTRL_STATE_ARDUINO)) {
+				return false;
+			}
+		} else {
+			/* on full peripheral pins */
+			/* TODO: here we use ARDUINO custom state however for "complex"
+			 * peripherals we can avoid defining arduino state and use default */
+			if (pinctrl_apply_state(pcfg, PINCTRL_STATE_ARDUINO)) {
+				return false;
+			}
 		}
 	}
-
 	return true;
 }
 
-void end_device(const struct device *dev, const struct pinctrl_dev_config *pcfg /*= nullptr*/) {
+/**
+ * @brief de-initialize a device by putting its pins into sleep state
+ * to be used only for "complex" peripherals and not single pin (because
+ * historically single pin hardware does not have the concept of "end")
+ */
+void end_device(const struct device *dev) {
 	if (dev == nullptr) {
 		return;
 	}
+
+	const struct pinctrl_dev_config *pcfg = nullptr;
+	pcfg = get_known_pcfg(dev);
 
 	/* Suspends the hardware clock and applies the sleep pinctrl state */
 #ifdef CONFIG_PM_DEVICE
@@ -217,23 +349,6 @@ size_t pwm_pin_index(pin_size_t pinNumber) {
 	return (size_t)-1;
 }
 
-/* Single macro to define the pinctrl struct given a node_id */
-#define DEFINE_PWM_PINCTRL(node_id) PINCTRL_DT_DEFINE(node_id);
-
-/* find only st_stm32 pwm */
-#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_pwm)
-DT_FOREACH_STATUS_OKAY(st_stm32_pwm, DEFINE_PWM_PINCTRL)
-#endif
-
-#if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_pwm)
-DT_FOREACH_STATUS_OKAY(nordic_nrf_pwm, DEFINE_PWM_PINCTRL)
-#endif
-
-#define PWM_PINCTRL_CFG(n, p, i) PINCTRL_DT_DEV_CONFIG_GET(DT_PWMS_CTLR_BY_IDX(n, i)),
-
-static const struct pinctrl_dev_config *arduino_pwm_pcfg[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_PINCTRL_CFG)};
-
 #endif // CONFIG_PWM
 
 #ifdef CONFIG_ADC
@@ -264,7 +379,6 @@ size_t analog_pin_index(pin_size_t pinNumber) {
 }
 
 #endif // CONFIG_ADC
-
 #ifdef CONFIG_DAC
 
 #if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac))
@@ -399,11 +513,12 @@ void analogWrite(pin_size_t pinNumber, int value) {
 	if (idx >= ARRAY_SIZE(arduino_pwm)) {
 		return;
 	}
-	/* wake the timer (if PM supported) and apply pinctrl */
-	if (!begin_device(arduino_pwm[idx].dev, arduino_pwm_pcfg[idx])) {
+
+	if (!begin_device(arduino_pwm[idx].dev, arduino_pwm_pinctrl_idx[idx])) {
 		return;
 	}
 
+	/* 3. Clamp value and set pulse */
 	value = map(value, 0, 1 << _analog_write_resolution, 0, arduino_pwm[idx].period);
 
 	if (((uint32_t)value) > arduino_pwm[idx].period) {
@@ -412,21 +527,22 @@ void analogWrite(pin_size_t pinNumber, int value) {
 		value = 0;
 	}
 
-	/*
-	 * A duty ratio determines by the period value defined in dts
-	 * and the value arguments. So usually the period value sets as 255.
-	 */
 	(void)pwm_set_pulse_dt(&arduino_pwm[idx], value);
 }
-
 #endif
 
 #ifdef CONFIG_DAC
+
 void analogWrite(enum dacPins dacName, int value) {
 	if (dacName >= NUM_OF_DACS) {
 		return;
 	}
 
+	if (!begin_device(dac_dev, (int16_t)dacName)) {
+		return;
+	}
+
+	/* 3. Setup channel and write value */
 	dac_channel_setup(dac_dev, &dac_ch_cfg[dacName]);
 
 	const int max_dac_value = 1U << dac_ch_cfg[dacName].resolution;
@@ -469,14 +585,11 @@ int analogRead(pin_size_t pinNumber) {
 		return -EINVAL;
 	}
 
-	/*
-	 * ADC that is on MCU supported by Zephyr exists
-	 * only 16bit resolution, currently.
-	 */
-	if (arduino_adc[idx].resolution > 16) {
-		return -ENOTSUP;
+	/* start adc on single pin */
+	if (!begin_device(arduino_adc[idx].dev, arduino_adc_pinctrl_idx[idx])) {
+		return -EIO;
 	}
-
+	/* configure channel */
 	err = adc_channel_setup(arduino_adc[idx].dev, &arduino_adc[idx].channel_cfg);
 	if (err < 0) {
 		return err;
@@ -491,10 +604,7 @@ int analogRead(pin_size_t pinNumber) {
 		return err;
 	}
 
-	/*
-	 * If necessary map the return value to the
-	 * number of bits the user has asked for
-	 */
+	/* Map the return value to the requested resolution */
 	if (read_resolution == seq.resolution) {
 		return buf;
 	}
@@ -503,7 +613,6 @@ int analogRead(pin_size_t pinNumber) {
 	}
 	return buf << (read_resolution - seq.resolution);
 }
-
 #endif
 
 void attachInterrupt(pin_size_t pinNumber, voidFuncPtr callback, PinStatus pinStatus) {
