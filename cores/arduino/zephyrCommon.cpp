@@ -139,8 +139,8 @@ static size_t get_pinctrl_state_index(const DT_SPEC (&specs)[N], size_t spec_idx
 /**
  * @brief Apply a single pin from a custom pinctrl state.
  */
-int arduino_pinctrl_pin(const struct pinctrl_dev_config *pcfg, uint8_t pin_sub_idx,
-						uint8_t state_id = PINCTRL_STATE_ARDUINO) {
+int apply_pinctrl_to_pin(const struct pinctrl_dev_config *pcfg, uint8_t pin_sub_idx,
+						 uint8_t state_id = PINCTRL_STATE_ARDUINO) {
 	if (pcfg == nullptr) {
 		return -EINVAL;
 	}
@@ -203,7 +203,7 @@ bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
 	if (pcfg != nullptr) {
 		if (pin_sub_idx >= 0) {
 			/* on single pin */
-			if (arduino_pinctrl_pin(pcfg, (uint8_t)pin_sub_idx, PINCTRL_STATE_ARDUINO)) {
+			if (apply_pinctrl_to_pin(pcfg, (uint8_t)pin_sub_idx, PINCTRL_STATE_ARDUINO)) {
 				return false;
 			}
 		} else {
