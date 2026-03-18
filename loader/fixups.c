@@ -379,6 +379,28 @@ static void on_gpio_changed(const struct device *dev, void *user_data)
 	configure_leds(backup.leds_control_buffer);
 }
 
+static volatile uint32_t _period_cycles = 0;
+void tacho_capture_callback(const struct device *dev,
+					uint32_t pwm,
+					uint32_t period_cycles,
+					uint32_t pulse_cycles,
+					int status,
+					void *user_data) {
+	_period_cycles = period_cycles;
+}
+
+void tacho_thd(void *arg1, void *arg2, void *arg3) {
+	while (1) {
+		uint8_t data[0x40];
+		eeprom_target_read_data(fan_eeprom, 0, data, sizeof(data));
+		data[0x3e] = (_period_cycles >> 8) & 0xFF; //Fan 1 tach msb
+		data[0x3f] = _period_cycles & 0xFF; //Fan 1 tach lsb
+		eeprom_target_write_data(fan_eeprom, 0, data, sizeof(data));
+		k_sleep(K_SECONDS(1));
+	}
+}
+K_THREAD_DEFINE(tacho, 512, tacho_thd, NULL, NULL, NULL, 5, 0, 1000);
+
 int system_utilities(void) {
 
 	/* Linux Ready GPIO input */
@@ -475,6 +497,14 @@ int system_utilities(void) {
 
 	/* Restore LEDs values saved in backup RAM */
 	configure_leds(backup.leds_control_buffer);
+
+	pwm_configure_capture(fan_tach, 1,
+				    PWM_POLARITY_NORMAL |
+				    PWM_CAPTURE_MODE_CONTINUOUS |
+				    PWM_CAPTURE_TYPE_PULSE | PWM_CAPTURE_TYPE_PERIOD,
+				    tacho_capture_callback, NULL);
+
+	pwm_enable_capture(fan_tach, 1);
 }
 SYS_INIT(system_utilities, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
