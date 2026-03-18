@@ -10,6 +10,7 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/devicetree.h>
 
+#ifdef USE_DT_MAPPING_ARRAY
 /* Helper macro to extract individual elements from a Devicetree array property */
 #define EXTRACT_PINCTRL_IDX(node_id, prop, idx) DT_PROP_BY_IDX(node_id, prop, idx),
 #ifdef CONFIG_PWM
@@ -25,6 +26,7 @@ const uint8_t arduino_pwm_pinctrl_idx[] = {
 /* Automatically generate the ADC pinctrl mapping from the Devicetree */
 const uint8_t arduino_adc_pinctrl_idx[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pinctrl_idx, EXTRACT_PINCTRL_IDX)};
+#endif
 #endif
 #endif
 
@@ -114,6 +116,24 @@ static const struct pinctrl_dev_config *get_known_pcfg(const struct device *dev)
 		}
 	}
 	return nullptr;
+}
+
+/*
+ * Resolve pin index in a device ARDUINO pinctrl state from a DT spec array.
+ * The resulting index is the per-device ordinal at spec_idx.
+ */
+template <typename DT_SPEC, size_t N>
+static size_t get_pinctrl_state_index(const DT_SPEC (&specs)[N], size_t spec_idx) {
+	const struct device *dev = specs[spec_idx].dev;
+	size_t state_pin_idx = 0;
+
+	for (size_t i = 0; i < spec_idx; i++) {
+		if (specs[i].dev == dev) {
+			state_pin_idx++;
+		}
+	}
+
+	return state_pin_idx;
 }
 
 /**
@@ -529,7 +549,7 @@ void analogWrite(pin_size_t pinNumber, int value) {
 		return;
 	}
 
-	if (!begin_device(arduino_pwm[idx].dev, arduino_pwm_pinctrl_idx[idx])) {
+	if (!begin_device(arduino_pwm[idx].dev, get_pinctrl_state_index(arduino_pwm, idx))) {
 		return;
 	}
 
@@ -601,7 +621,7 @@ int analogRead(pin_size_t pinNumber) {
 	}
 
 	/* start adc on single pin */
-	if (!begin_device(arduino_adc[idx].dev, arduino_adc_pinctrl_idx[idx])) {
+	if (!begin_device(arduino_adc[idx].dev, get_pinctrl_state_index(arduino_adc, idx))) {
 		return -EIO;
 	}
 	/* configure channel */
