@@ -10,8 +10,23 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/devicetree.h>
 
-extern const uint8_t arduino_pwm_pinctrl_idx[];
-extern const uint8_t arduino_adc_pinctrl_idx[];
+/* Helper macro to extract individual elements from a Devicetree array property */
+#define EXTRACT_PINCTRL_IDX(node_id, prop, idx) DT_PROP_BY_IDX(node_id, prop, idx),
+#ifdef CONFIG_PWM
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwm_pinctrl_idx)
+/* Automatically generate the PWM pinctrl mapping from the Devicetree */
+const uint8_t arduino_pwm_pinctrl_idx[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pinctrl_idx, EXTRACT_PINCTRL_IDX)};
+#endif
+#endif
+
+#ifdef CONFIG_ADC
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), adc_pinctrl_idx)
+/* Automatically generate the ADC pinctrl mapping from the Devicetree */
+const uint8_t arduino_adc_pinctrl_idx[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pinctrl_idx, EXTRACT_PINCTRL_IDX)};
+#endif
+#endif
 
 #if defined(ARDUINO)
 /*
