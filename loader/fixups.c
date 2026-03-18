@@ -357,8 +357,9 @@ static const struct gpio_dt_spec led3b =
 static const struct gpio_dt_spec led3r =
 		GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), builtin_led_gpios, 11);
 
-static const struct gpio_dt_spec *leds[] = {&led0g, &led0b, &led0r, &led1g, &led1b, &led1r,
-										&led2g, &led2b, &led2r, &led3g, &led3b, &led3r};
+// Driver expects order in RGB
+static const struct gpio_dt_spec *leds[] = {&led0r, &led0g, &led0b, &led1r, &led1g, &led1b,
+										&led2r, &led2g, &led2b, &led3r, &led3g, &led3b};
 
 void configure_leds(const uint8_t *leds_control_buffer) {
 	for (size_t i = 0; i < sizeof(leds)/sizeof(leds[0]); i++) {
