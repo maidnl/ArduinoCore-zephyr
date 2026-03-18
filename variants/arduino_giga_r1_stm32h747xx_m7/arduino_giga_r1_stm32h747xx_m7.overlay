@@ -52,10 +52,9 @@
 &i2c1 {
 	status = "okay";
 
-	pinctrl-0 = <&analog_pb8 &analog_pb9>;
+	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
 	pinctrl-1 = <&analog_pb8 &analog_pb9>;
-	pinctrl-2 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
-	pinctrl-names = "default", "sleep", "arduino";
+	pinctrl-names = "default", "sleep";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 

@@ -210,11 +210,12 @@ bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
 			/* on full peripheral pins */
 			/* TODO: here we use ARDUINO custom state however for "complex"
 			 * peripherals we can avoid defining arduino state and use default */
-			if (pinctrl_apply_state(pcfg, PINCTRL_STATE_ARDUINO)) {
+			if (pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT)) {
 				return false;
 			}
 		}
 	}
+
 	return true;
 }
 
