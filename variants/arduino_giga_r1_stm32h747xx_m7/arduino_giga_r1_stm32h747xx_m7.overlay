@@ -338,6 +338,10 @@
 
 &dac1 {
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <&analog_pa4 &analog_pa5>;
+	pinctrl-2 = <&dac1_out1_pa4 &dac1_out2_pa5>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 /{
