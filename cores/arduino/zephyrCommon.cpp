@@ -10,6 +10,8 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/devicetree.h>
 
+/* this code is only kept for reference in case is necessary to map pinctrl by
+ * hands for some hardware */
 #ifdef USE_DT_MAPPING_ARRAY
 /* Helper macro to extract individual elements from a Devicetree array property */
 #define EXTRACT_PINCTRL_IDX(node_id, prop, idx) DT_PROP_BY_IDX(node_id, prop, idx),
@@ -189,12 +191,18 @@ bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
 	/* Initialize the device if not already is */
 	if (!device_is_ready(dev)) {
 		if (device_init(dev) < 0) {
+#ifdef DEBUG_BEGIN_DEVICE
+			Serial.println("FAILED DEVICE INIT");
+#endif
 			return false;
 		}
 	} else {
 #ifdef CONFIG_PM_DEVICE
 		int err = pm_device_action_run(dev, PM_DEVICE_ACTION_RESUME);
 		if (err < 0 && err != -EALREADY && err != -ENOSYS && err != -ENOTSUP) {
+#ifdef DEBUG_BEGIN_DEVICE
+			Serial.println("FAILED PM RESUME");
+#endif
 			return false;
 		}
 #endif
@@ -202,15 +210,27 @@ bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
 	/* apply pinctrl configuration */
 	if (pcfg != nullptr) {
 		if (pin_sub_idx >= 0) {
+#ifdef DEBUG_BEGIN_DEVICE
+			Serial.println("Using single pin pinctrl configuration");
+#endif
 			/* on single pin */
 			if (apply_pinctrl_to_pin(pcfg, (uint8_t)pin_sub_idx, PINCTRL_STATE_ARDUINO)) {
+#ifdef DEBUG_BEGIN_DEVICE
+				Serial.println("FAILED apply_pinctrl_to_pin");
+#endif
 				return false;
 			}
 		} else {
+#ifdef DEBUG_BEGIN_DEVICE
+			Serial.println("Using MULTI pins pinctrl configuration");
+#endif
 			/* on full peripheral pins */
 			/* TODO: here we use ARDUINO custom state however for "complex"
 			 * peripherals we can avoid defining arduino state and use default */
 			if (pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT)) {
+#ifdef DEBUG_BEGIN_DEVICE
+				Serial.println("FAILED pinctrl_apply_state");
+#endif
 				return false;
 			}
 		}
@@ -621,8 +641,10 @@ int analogRead(pin_size_t pinNumber) {
 		return -EINVAL;
 	}
 
+	int16_t p = get_pinctrl_state_index(arduino_adc, idx);
+
 	/* start adc on single pin */
-	if (!begin_device(arduino_adc[idx].dev, get_pinctrl_state_index(arduino_adc, idx))) {
+	if (!begin_device(arduino_adc[idx].dev, p)) {
 		return -EIO;
 	}
 	/* configure channel */
