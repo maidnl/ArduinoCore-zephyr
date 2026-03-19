@@ -60,8 +60,10 @@
 
 &i2c2 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c2_scl_ph4 &i2c2_sda_pb11>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_ph4 &analog_pb11>;
+	pinctrl-names = "default", "sleep";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -70,6 +72,7 @@
 	st,prescaler = <0>;
 
 	pwm1: pwm {
+	   zephyr,deferred-init;
 		status = "okay";
 		/* Temporarily removed SPI1 pins */
 		/* pinctrl-0 = <&tim1_ch3_pj9 &tim1_ch1_pk1 &tim1_ch2_pj11>; */
@@ -193,7 +196,10 @@
 };
 
 &adc1 {
-	pinctrl-0 = <&adc1_inp4_pc4
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&adc1_inp4_pc4
 		&adc1_inp8_pc5
 		&adc1_inp9_pb0
 		&adc1_inp5_pb1
@@ -201,11 +207,11 @@
 		&adc1_inp12_pc2
 		&adc1_inp10_pc0
 		&adc1_inp16_pa0
-		&adc1_inp18_pa4
-		&adc1_inp19_pa5
+		&adc1_inp1_pa1_c
 		&adc1_inp0_pa0_c
-		&adc1_inp1_pa1_c>;
-	pinctrl-names = "default";
+		&adc1_inp18_pa4
+		&adc1_inp19_pa5>;
+	pinctrl-names = "default", "sleep", "arduino";
 	st,adc-clock-source = "SYNC";
 	st,adc-prescaler = <4>;
 	status = "okay";
@@ -301,9 +307,12 @@
 };
 
 &adc3 {
-	pinctrl-0 = <&adc3_inp0_pc2_c
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&adc3_inp0_pc2_c
 		&adc3_inp1_pc3_c>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 	st,adc-clock-source = "SYNC";
 	st,adc-prescaler = <4>;
 	status = "okay";
@@ -325,6 +334,10 @@
 		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
 		zephyr,resolution = <16>;
 	};
+};
+
+&dac1 {
+	zephyr,deferred-init;
 };
 
 /{
@@ -532,16 +545,7 @@
 			   /* <&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>, */
 			   /* <&pwm12 1 PWM_HZ(500) PWM_POLARITY_NORMAL>; */
    			   <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>;
-      pwm-pinctrl-idx = <0>, 
-								<0>, // pwm2 PA3
-								<1>, // PWM2 PA4
-								<0>, // PWM8 PJ8
-								<0>, // PWM3 PA7
-								<0>, // PWM4 PD13
-								<1>, // PWM3 PB4
-								<1>, // PWM4 PB8
-								<2>, // PWM4 PB9
-								<2>; // PWM1 PJ11
+      
 							
 
 		io-channels =	<&adc1 4>,
@@ -559,8 +563,6 @@
 				<&adc1 18>,
 				<&adc1 19>;
 
-		 adc-pinctrl-idx = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <0>, <1>, <8>,
-			 <9>, <10>, <11>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
