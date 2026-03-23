@@ -115,9 +115,11 @@ void arduino::ZephyrSPI::detachInterrupt() {
 }
 
 void arduino::ZephyrSPI::begin() {
+	begin_device(spi_dev);
 }
 
 void arduino::ZephyrSPI::end() {
+	end_device(spi_dev);
 }
 
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), spis)
