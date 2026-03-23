@@ -370,3 +370,6 @@ FORCE_EXPORT_SYM(fs_unregister);
 #if defined(CONFIG_PM_DEVICE)
 FORCE_EXPORT_SYM(pm_device_action_run);
 #endif
+
+FORCE_EXPORT_SYM(pinctrl_lookup_state);
+FORCE_EXPORT_SYM(pinctrl_configure_pins);

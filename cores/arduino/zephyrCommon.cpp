@@ -43,7 +43,9 @@ const uint8_t arduino_adc_pinctrl_idx[] = {
 #pragma push_macro("ARDUINO")
 #undef ARDUINO
 #endif
-
+#define SAFE_PINCTRL_GET(node_id)                                                                  \
+	COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEV_CONFIG_GET(node_id)),        \
+				(nullptr))
 /* COND_CODE_1 insert the code defined in the second argument if the first
  * argument is true (otherwise it uses the third argument)  */
 
@@ -67,14 +69,12 @@ struct pinctrl_map_entry {
 
 /* Macros to safely extract devices depending on how they are defined in DT */
 #define MAP_ENTRY_PWM(n, p, i)                                                                     \
-	{DEVICE_DT_GET(DT_PWMS_CTLR_BY_IDX(n, i)),                                                     \
-	 PINCTRL_DT_DEV_CONFIG_GET(DT_PWMS_CTLR_BY_IDX(n, i))},
+	{DEVICE_DT_GET(DT_PWMS_CTLR_BY_IDX(n, i)), SAFE_PINCTRL_GET(DT_PWMS_CTLR_BY_IDX(n, i))},
 #define MAP_ENTRY_ADC(n, p, i)                                                                     \
 	{DEVICE_DT_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i)),                                              \
-	 PINCTRL_DT_DEV_CONFIG_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i))},
+	 SAFE_PINCTRL_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i))},
 #define MAP_ENTRY_PHANDLE(n, p, i)                                                                 \
-	{DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)),                                                    \
-	 PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE_BY_IDX(n, p, i))},
+	{DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)), SAFE_PINCTRL_GET(DT_PHANDLE_BY_IDX(n, p, i))},
 
 static const struct pinctrl_map_entry pinctrl_map[] = {
 /* Only map PWMs if enabled */
@@ -102,7 +102,7 @@ static const struct pinctrl_map_entry pinctrl_map[] = {
 
 #if defined(CONFIG_DAC) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac)
 						{DEVICE_DT_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac)),
-						 PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac))},
+						 SAFE_PINCTRL_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac))},
 #endif
 
 	{NULL, NULL} /* Terminate the array */
