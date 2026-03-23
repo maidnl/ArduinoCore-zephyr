@@ -13,26 +13,39 @@
 
 &usart1 {
 	status = "okay";
+	zephyr,deferred-init;
+        pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pb7>;
+	pinctrl-1 = <&analog_pa9 &analog_pb7>;
+	pinctrl-names = "default", "sleep";
 };
 
 &usart2 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&usart2_tx_pd5 &usart2_rx_pd6>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_pd5 &analog_pd6>;
+	pinctrl-names = "default", "sleep";
 	current-speed = <115200>;
 };
 
 &uart4 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&uart4_tx_ph13 &uart4_rx_pi9>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_ph13 &analog_pi9>;
+	pinctrl-names = "default", "sleep";
 	current-speed = <115200>;
 };
 
 &usart6 {
 	status = "okay";
+	zephyr,deferred-init;
+        pinctrl-0 = <&usart6_tx_pg14 &usart6_rx_pc7>;
+	pinctrl-1 = <&analog_pg14 &analog_pc7>;
+	pinctrl-names = "default", "sleep";
 };
 
+/* TODO: deferred init? */
 &i2c4 {
 	status = "okay";
 	gc2145: gc2145@3c {
@@ -51,7 +64,7 @@
 
 &i2c1 {
 	status = "okay";
-
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
 	pinctrl-1 = <&analog_pb8 &analog_pb9>;
 	pinctrl-names = "default", "sleep";
@@ -69,46 +82,58 @@
 
 &timers1 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <0>;
 
 	pwm1: pwm {
-	   zephyr,deferred-init;
 		status = "okay";
-		/* Temporarily removed SPI1 pins */
-		/* pinctrl-0 = <&tim1_ch3_pj9 &tim1_ch1_pk1 &tim1_ch2_pj11>; */
-		pinctrl-0 = <&tim1_ch3_pj9 &tim1_ch1_pk1>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		/* Re-enable shared pin for SPI5/PWM dynamic switching */
+		pinctrl-0 = <>;
+		pinctrl-1 = <&analog_pj9 &analog_pk1 &analog_pj11>;
+		pinctrl-2 = <&tim1_ch3_pj9 &tim1_ch1_pk1 &tim1_ch2_pj11>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
 &timers2 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm2: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim2_ch4_pa3  &tim2_ch3_pa2>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <&analog_pa3 &analog_pa2>;
+		pinctrl-2 = <&tim2_ch4_pa3  &tim2_ch3_pa2>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
 &timers3 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm3: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim3_ch2_pa7 &tim3_ch1_pb4>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <&analog_pa7 &analog_pb4>;
+		pinctrl-2 = <&tim3_ch2_pa7 &tim3_ch1_pb4>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
 &timers4 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm4: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <>;
 		pinctrl-1 = <&analog_pd13 &analog_pb8 &analog_pb9>;	
 		pinctrl-2 = <&tim4_ch2_pd13 &tim4_ch3_pb8 &tim4_ch4_pb9>;
@@ -118,27 +143,35 @@
 
 &timers8 {
 	status = "okay";
+	zephyr,deferred-init;
 	st,prescaler = <100>;
 
 	pwm8: pwm {
 		status = "okay";
-		/* Temporarily removed SPI1 pins */
-		/* pinctrl-0 = <&tim8_ch1_pj8 &tim8_ch2_pj10>; */
-		pinctrl-0 = <&tim8_ch1_pj8>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		/* Re-enable shared pin for SPI5/PWM dynamic switching */
+		pinctrl-0 = <>;
+		pinctrl-1 = <&analog_pj8 &analog_pj10>;
+		pinctrl-2 = <&tim8_ch1_pj8 &tim8_ch2_pj10>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
-/* Temporarily removed SPI1 pins */
-/* &timers12 { */
-/*	status = "okay"; */
-/* 	st,prescaler = <100>; */
-/*	pwm12: pwm { */
-/* 		status = "okay"; */
-/* 		pinctrl-0 = <&tim12_ch1_ph6>; */
-/* 		pinctrl-names = "default"; */
-/* 	}; */
-/*}; */
+&timers12 {
+	status = "okay";
+	zephyr,deferred-init;
+	st,prescaler = <100>;
+
+	pwm12: pwm {
+		status = "okay";
+		zephyr,deferred-init;
+		/* PH6 is shared with SPI5 SCK on D13 */
+		pinctrl-0 = <>;
+		pinctrl-1 = <&analog_ph6>;
+		pinctrl-2 = <&tim12_ch1_ph6>;
+		pinctrl-names = "default", "sleep", "arduino";
+	};
+};
 
 &pwm1 {
 	/* Use the pwmclock node to start the clock generation */
@@ -183,16 +216,20 @@
 
 &spi1 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&spi1_sck_pb3
 		     &spi1_miso_pg9 &spi1_mosi_pd7>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_pb3 &analog_pg9 &analog_pd7>;
+	pinctrl-names = "default", "sleep";
 };
 
 &spi5 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&spi5_sck_ph6
 		     &spi5_miso_pj11 &spi5_mosi_pj10>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&analog_ph6 &analog_pj11 &analog_pj10>;
+	pinctrl-names = "default", "sleep";
 };
 
 &adc1 {
@@ -543,14 +580,12 @@
 			   <&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
 			   <&pwm4 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
 			   <&pwm4 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,
-				/* Temporarily removed SPI1 pins */
-			   /* <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>, */
-			   /* <&pwm8 2 PWM_HZ(500) PWM_POLARITY_NORMAL>, */
-			   /* <&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>, */
-			   /* <&pwm12 1 PWM_HZ(500) PWM_POLARITY_NORMAL>; */
-   			   <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>;
-      
-							
+			   /* D10-D13 in arduino_header order */
+			   <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>,
+			   <&pwm8 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			   <&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>,
+			   <&pwm12 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			   <&pwm1 1 PWM_HZ(5000) PWM_POLARITY_NORMAL>;
 
 		io-channels =	<&adc1 4>,
 				<&adc1 8>,
@@ -566,7 +601,6 @@
 				<&adc1 0>,
 				<&adc1 18>,
 				<&adc1 19>;
-
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
