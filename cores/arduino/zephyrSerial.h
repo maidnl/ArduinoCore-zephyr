@@ -74,8 +74,7 @@ public:
 
 	void flush();
 
-	void end() {
-	}
+	void end();
 
 	size_t write(const uint8_t *buffer, size_t size);
 

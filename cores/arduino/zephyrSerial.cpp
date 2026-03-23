@@ -10,6 +10,7 @@
 #include <api/HardwareSerial.h>
 #include <zephyrSerial.h>
 #include <Arduino.h>
+#include "zephyrInternal.h"
 
 namespace {
 
@@ -59,6 +60,10 @@ void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
 		.flow_ctrl = UART_CFG_FLOW_CTRL_NONE,
 	};
 
+	if (!begin_device(uart)) {
+		return;
+	}
+
 	uart_configure(uart, &config);
 	uart_irq_callback_user_data_set(uart, arduino::ZephyrSerial::IrqDispatch, this);
 	k_sem_take(&rx.sem, K_FOREVER);
@@ -106,6 +111,10 @@ void arduino::ZephyrSerial::IrqHandler() {
 		}
 	}
 	k_sem_give(&tx.sem);
+}
+
+void arduino::ZephyrSerial::end() {
+	end_device(uart);
 }
 
 void arduino::ZephyrSerial::IrqDispatch(const struct device *dev, void *data) {
