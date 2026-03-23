@@ -397,6 +397,8 @@ void tacho_thd(void *arg1, void *arg2, void *arg3) {
 		data[0x3f] = _period_cycles & 0xFF; //Fan 1 tach lsb
 		eeprom_target_write_data(fan_eeprom, 0, data, sizeof(data));
 		k_sleep(K_SECONDS(1));
+		_period_cycles = 0;
+		k_sleep(K_SECONDS(1));
 	}
 }
 K_THREAD_DEFINE(tacho, 512, tacho_thd, NULL, NULL, NULL, 5, 0, 1000);
