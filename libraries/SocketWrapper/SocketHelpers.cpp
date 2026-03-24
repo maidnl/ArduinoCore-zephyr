@@ -159,9 +159,8 @@ int NetworkInterface::begin(bool blocking, uint64_t additional_event_mask) {
 	// events are handled internally. Must be reworked to wait on a sem
 	// and register multiple event masks with event_handler instead.
 	ARG_UNUSED(additional_event_mask);
-
 	int ret = net_mgmt_event_wait_on_iface(netif, NET_EVENT_IPV4_ADDR_ADD, NULL, NULL, NULL,
-										   blocking ? K_FOREVER : K_SECONDS(1));
+										   blocking ? K_FOREVER : K_SECONDS(10));
 	return (ret == 0) ? 1 : 0;
 }
 

@@ -11,6 +11,7 @@
 #include "utility/wl_definitions.h"
 #include <zephyr/net/wifi_mgmt.h>
 #include "ZephyrClient.h"
+#include <zephyr/net/net_if.h>
 
 using WiFiClient = ZephyrClient;
 
@@ -22,8 +23,7 @@ using WiFiClient = ZephyrClient;
 
 class WiFiClass : public NetworkInterface {
 public:
-	WiFiClass() {
-	}
+	WiFiClass();
 
 	~WiFiClass() {
 	}
@@ -43,6 +43,8 @@ public:
 	String firmwareVersion();
 
 private:
+	bool net_init();
+	bool hw_initialization_failed = false;
 	struct net_if *sta_iface = nullptr;
 	struct net_if *ap_iface = nullptr;
 

@@ -550,6 +550,10 @@
 	};
 };
 
+&wifi {
+	zephyr,deferred-init;
+};
+
 /* Include common flash filesystem configuration */
 qspi_flash: &n25q128a1 {};
 #include "../common/arduino_flash_fs.dtsi"
