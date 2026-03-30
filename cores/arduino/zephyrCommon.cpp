@@ -10,6 +10,12 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/devicetree.h>
 
+#ifdef ARDUINO_NANO33BLE
+extern uint32_t get_absolute_nrf_pin(uint8_t arduino_pin);
+extern void nrf_hardware_disconnect_pin(uint32_t absolute_nrf_pin);
+extern void nrf_hardware_disconnect_device_pins(const struct device *dev);
+#endif
+
 /* this code is only kept for reference in case is necessary to map pinctrl by
  * hands for some hardware */
 #ifdef USE_DT_MAPPING_ARRAY
@@ -182,6 +188,9 @@ bool begin_device(const struct device *dev, int16_t pin_sub_idx) {
 		return false;
 	}
 
+#ifdef ARDUINO_NANO33BLE
+	nrf_hardware_disconnect_device_pins(dev);
+#endif
 	const struct pinctrl_dev_config *pcfg = nullptr;
 
 	/* find pinctrl configuration using device and look-up table pinctrl_map
@@ -471,6 +480,9 @@ void yield(void) {
  *  A high physical level will be interpreted as value 1
  */
 void pinMode(pin_size_t pinNumber, PinMode pinMode) {
+#ifdef ARDUINO_NANO33BLE
+	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
+#endif
 	if (pinMode == INPUT) { // input mode
 		gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_INPUT | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == INPUT_PULLUP) { // input with internal pull-up
@@ -570,6 +582,10 @@ void analogWrite(pin_size_t pinNumber, int value) {
 		return;
 	}
 
+#ifdef ARDUINO_NANO33BLE
+	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
+#endif
+
 	if (!begin_device(arduino_pwm[idx].dev, get_pinctrl_state_index(arduino_pwm, idx))) {
 		return;
 	}
@@ -640,6 +656,10 @@ int analogRead(pin_size_t pinNumber) {
 	if (idx >= ARRAY_SIZE(arduino_adc)) {
 		return -EINVAL;
 	}
+
+#ifdef ARDUINO_NANO33BLE
+	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
+#endif
 
 	int16_t p = get_pinctrl_state_index(arduino_adc, idx);
 

@@ -276,6 +276,7 @@
 
 &i2c0 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c0_default>;
 	pinctrl-1 = <&i2c0_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -284,6 +285,7 @@
 
 &i2c1 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c1_default>;
 	pinctrl-1 = <&i2c1_sleep>;
 	pinctrl-names = "default", "sleep";
