@@ -55,8 +55,12 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	this->vdev = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 #endif
 
-	if (!this->vdev || !device_is_ready(this->vdev)) {
+	if (!this->vdev) {
 		return false;
+	}
+
+	if (!begin_device(this->vdev)) {
+		return;
 	}
 
 	switch (pixformat) {
@@ -171,4 +175,8 @@ bool Camera::setVerticalFlip(bool flip_enable) {
 bool Camera::setHorizontalMirror(bool mirror_enable) {
 	struct video_control ctrl = {.id = VIDEO_CID_HFLIP, .val = mirror_enable};
 	return video_set_ctrl(this->vdev, &ctrl) == 0;
+}
+
+void Camera::end() {
+	end_device(this->vdev);
 }

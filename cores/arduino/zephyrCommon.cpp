@@ -16,28 +16,6 @@ extern void nrf_hardware_disconnect_pin(uint32_t absolute_nrf_pin);
 extern void nrf_hardware_disconnect_device_pins(const struct device *dev);
 #endif
 
-/* this code is only kept for reference in case is necessary to map pinctrl by
- * hands for some hardware */
-#ifdef USE_DT_MAPPING_ARRAY
-/* Helper macro to extract individual elements from a Devicetree array property */
-#define EXTRACT_PINCTRL_IDX(node_id, prop, idx) DT_PROP_BY_IDX(node_id, prop, idx),
-#ifdef CONFIG_PWM
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwm_pinctrl_idx)
-/* Automatically generate the PWM pinctrl mapping from the Devicetree */
-const uint8_t arduino_pwm_pinctrl_idx[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pinctrl_idx, EXTRACT_PINCTRL_IDX)};
-#endif
-#endif
-
-#ifdef CONFIG_ADC
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), adc_pinctrl_idx)
-/* Automatically generate the ADC pinctrl mapping from the Devicetree */
-const uint8_t arduino_adc_pinctrl_idx[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pinctrl_idx, EXTRACT_PINCTRL_IDX)};
-#endif
-#endif
-#endif
-
 #if defined(ARDUINO)
 /*
  * The global ARDUINO macro is numeric (e.g. 10607) in Arduino builds.
@@ -49,100 +27,58 @@ const uint8_t arduino_adc_pinctrl_idx[] = {
 #pragma push_macro("ARDUINO")
 #undef ARDUINO
 #endif
-#define SAFE_PINCTRL_GET(node_id)                                                                  \
-	COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEV_CONFIG_GET(node_id)),        \
-				(nullptr))
-/* COND_CODE_1 insert the code defined in the second argument if the first
- * argument is true (otherwise it uses the third argument)  */
 
+/* Helper to check if a node has the zephyr,deferred-init property */
+#define PINCTRL_NODE_DEFERRED(node_id) DT_PROP_OR(node_id, zephyr_deferred_init, 0)
+
+/* Safely define pinctrl only if BOTH deferred-init AND pinctrl-0 are present */
 #define PINCTRL_DEFINE_IF_PRESENT(node_id)                                                         \
-	COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEFINE(node_id);), ())
+	COND_CODE_1(PINCTRL_NODE_DEFERRED(node_id),                                                    \
+            (COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEFINE(node_id);), ())), \
+            ())
 
-/* Invoque the argument macro for each node which has status okay in the DT
- * Since the macro argument uses COND_CODE_1 this means that the invocation is
- * further "restricted" only for nodes which have pinctrl-0 defined
- * So for each node which is okay and has pinctrl-0 it is called
- * PINCTRL_DT_DEFINE which defines and initialize the pin control configuration
- * for the device at node id
- * */
 DT_FOREACH_STATUS_OKAY_NODE(PINCTRL_DEFINE_IF_PRESENT)
 
-/* structure that holds device and pinctrl configuration */
 struct pinctrl_map_entry {
 	const struct device *dev;
 	const struct pinctrl_dev_config *pcfg;
 };
 
-/* Macros to safely extract devices depending on how they are defined in DT */
-#define MAP_ENTRY_PWM(n, p, i)                                                                     \
-	{DEVICE_DT_GET(DT_PWMS_CTLR_BY_IDX(n, i)), SAFE_PINCTRL_GET(DT_PWMS_CTLR_BY_IDX(n, i))},
-#define MAP_ENTRY_ADC(n, p, i)                                                                     \
-	{DEVICE_DT_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i)),                                              \
-	 SAFE_PINCTRL_GET(DT_IO_CHANNELS_CTLR_BY_IDX(n, i))},
-#define MAP_ENTRY_PHANDLE(n, p, i)                                                                 \
-	{DEVICE_DT_GET(DT_PHANDLE_BY_IDX(n, p, i)), SAFE_PINCTRL_GET(DT_PHANDLE_BY_IDX(n, p, i))},
+/* Safely extract pinctrl. If pinctrl-0 doesn't exist, assign nullptr to avoid compile errors */
+#define SAFE_PINCTRL_GET_DEFERRED(node_id)                                                         \
+	COND_CODE_1(DT_NODE_HAS_PROP(node_id, pinctrl_0), (PINCTRL_DT_DEV_CONFIG_GET(node_id)),        \
+            (nullptr))
 
+#define PINCTRL_MAP_ENTRY(node_id) {DEVICE_DT_GET(node_id), SAFE_PINCTRL_GET_DEFERRED(node_id)},
+
+#define PINCTRL_MAP_ENTRY_IF_PRESENT(node_id)                                                      \
+	COND_CODE_1(PINCTRL_NODE_DEFERRED(node_id), (PINCTRL_MAP_ENTRY(node_id)), ())
+
+/* Generate the final map iteratively */
 static const struct pinctrl_map_entry pinctrl_map[] = {
-/* Only map PWMs if enabled */
-#ifdef CONFIG_PWM
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, MAP_ENTRY_PWM)
-#endif
-
-/* Only map ADCs if enabled */
-#ifdef CONFIG_ADC
-		DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, MAP_ENTRY_ADC)
-#endif
-
-/* Only map I2C/SPI/UART if defined in zephyr,user */
-#if defined(CONFIG_I2C) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), i2cs)
-			DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), i2cs, MAP_ENTRY_PHANDLE)
-#endif
-
-#if defined(CONFIG_SPI) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), spis)
-				DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), spis, MAP_ENTRY_PHANDLE)
-#endif
-
-#if defined(CONFIG_SERIAL) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), uarts)
-					DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), uarts, MAP_ENTRY_PHANDLE)
-#endif
-
-#if defined(CONFIG_DAC) && DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac)
-						{DEVICE_DT_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac)),
-						 SAFE_PINCTRL_GET(DT_PHANDLE(DT_PATH(zephyr_user), dac))},
-#endif
-
-	{NULL, NULL} /* Terminate the array */
+	DT_FOREACH_STATUS_OKAY_NODE(PINCTRL_MAP_ENTRY_IF_PRESENT){nullptr,
+															  nullptr} /* Terminate the array */
 };
+
 #if defined(ARDUINO)
 #pragma pop_macro("ARDUINO")
 #endif
-/* --- 3. The Auto-Detect Function (KEEP THIS!) --- */
+
+/* Get pinctrl_dev_config for a device from the generated map. */
 static const struct pinctrl_dev_config *get_known_pcfg(const struct device *dev) {
 	for (size_t i = 0; i < ARRAY_SIZE(pinctrl_map); i++) {
 		if (pinctrl_map[i].dev == dev) {
 			return pinctrl_map[i].pcfg;
 		}
 	}
-	return nullptr;
+
+	return NULL;
 }
 
 /*
  * Resolve pin index in a device ARDUINO pinctrl state from a DT spec array.
  * The resulting index is the per-device ordinal at spec_idx.
  */
-template <typename DT_SPEC, size_t N>
-static size_t get_pinctrl_state_index(const DT_SPEC (&specs)[N], size_t spec_idx) {
-	const struct device *dev = specs[spec_idx].dev;
-	size_t state_pin_idx = 0;
-
-	for (size_t i = 0; i < spec_idx; i++) {
-		if (specs[i].dev == dev) {
-			state_pin_idx++;
-		}
-	}
-
-	return state_pin_idx;
-}
 
 /**
  * @brief Apply a single pin from a custom pinctrl state.
@@ -283,6 +219,13 @@ static const struct gpio_dt_spec arduino_pins[] = {
 	DT_FOREACH_PROP_ELEM_SEP(
 	DT_PATH(zephyr_user), digital_pin_gpios, GPIO_DT_SPEC_GET_BY_IDX, (, ))};
 
+#define RETURN_ON_INVALID_PIN(pinNumber, ...)                                                      \
+	do {                                                                                           \
+		if ((pin_size_t)(pinNumber) >= ARRAY_SIZE(arduino_pins)) {                                 \
+			return __VA_ARGS__;                                                                    \
+		}                                                                                          \
+	} while (0)
+
 namespace {
 
 #if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
@@ -373,6 +316,8 @@ struct gpio_port_callback *find_gpio_port_callback(const struct device *dev) {
 }
 
 void setInterruptHandler(pin_size_t pinNumber, voidFuncPtr func) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
@@ -389,6 +334,24 @@ void handleGpioCallback(const struct device *port, struct gpio_callback *cb, uin
 			pcb->handlers[i].handler();
 		}
 	}
+}
+
+/*
+ * Resolve pin index in a device ARDUINO pinctrl state from a DT spec array.
+ * The resulting index is the per-device ordinal at spec_idx.
+ */
+template <typename DT_SPEC, size_t N>
+static size_t state_pin_index_from_spec_index(const DT_SPEC (&specs)[N], size_t spec_idx) {
+	const struct device *dev = specs[spec_idx].dev;
+	size_t state_pin_idx = 0;
+
+	for (size_t i = 0; i < spec_idx; i++) {
+		if (specs[i].dev == dev) {
+			state_pin_idx++;
+		}
+	}
+
+	return state_pin_idx;
 }
 
 #ifdef CONFIG_PWM
@@ -444,6 +407,7 @@ size_t analog_pin_index(pin_size_t pinNumber) {
 }
 
 #endif // CONFIG_ADC
+
 #ifdef CONFIG_DAC
 
 #if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac))
@@ -480,6 +444,7 @@ void yield(void) {
  *  A high physical level will be interpreted as value 1
  */
 void pinMode(pin_size_t pinNumber, PinMode pinMode) {
+	RETURN_ON_INVALID_PIN(pinNumber);
 #ifdef ARDUINO_NANO33BLE
 	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
 #endif
@@ -497,10 +462,14 @@ void pinMode(pin_size_t pinNumber, PinMode pinMode) {
 }
 
 void digitalWrite(pin_size_t pinNumber, PinStatus status) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	gpio_pin_set_dt(&arduino_pins[pinNumber], status);
 }
 
 PinStatus digitalRead(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber, LOW);
+
 	return (gpio_pin_get_dt(&arduino_pins[pinNumber]) == 1) ? HIGH : LOW;
 }
 
@@ -518,6 +487,8 @@ void tone_timeout_cb(struct k_timer *timer) {
 }
 
 void tone(pin_size_t pinNumber, unsigned int frequency, unsigned long duration) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	struct k_timer *timer = &arduino_pin_timers[pinNumber];
 	const struct gpio_dt_spec *spec = &arduino_pins[pinNumber];
 	k_timeout_t timeout;
@@ -545,6 +516,8 @@ void tone(pin_size_t pinNumber, unsigned int frequency, unsigned long duration) 
 }
 
 void noTone(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	k_timer_stop(&arduino_pin_timers[pinNumber]);
 	gpio_pin_set_dt(&arduino_pins[pinNumber], 0);
 }
@@ -586,7 +559,7 @@ void analogWrite(pin_size_t pinNumber, int value) {
 	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
 #endif
 
-	if (!begin_device(arduino_pwm[idx].dev, get_pinctrl_state_index(arduino_pwm, idx))) {
+	if (!begin_device(arduino_pwm[idx].dev, state_pin_index_from_spec_index(arduino_pwm, idx))) {
 		return;
 	}
 
@@ -661,7 +634,7 @@ int analogRead(pin_size_t pinNumber) {
 	nrf_hardware_disconnect_pin(get_absolute_nrf_pin(pinNumber));
 #endif
 
-	int16_t p = get_pinctrl_state_index(arduino_adc, idx);
+	int16_t p = state_pin_index_from_spec_index(arduino_adc, idx);
 
 	/* start adc on single pin */
 	if (!begin_device(arduino_adc[idx].dev, p)) {
@@ -682,7 +655,10 @@ int analogRead(pin_size_t pinNumber) {
 		return err;
 	}
 
-	/* Map the return value to the requested resolution */
+	/*
+	 * If necessary map the return value to the
+	 * number of bits the user has asked for
+	 */
 	if (read_resolution == seq.resolution) {
 		return buf;
 	}
@@ -691,9 +667,12 @@ int analogRead(pin_size_t pinNumber) {
 	}
 	return buf << (read_resolution - seq.resolution);
 }
+
 #endif
 
 void attachInterrupt(pin_size_t pinNumber, voidFuncPtr callback, PinStatus pinStatus) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	struct gpio_port_callback *pcb;
 	gpio_flags_t intmode = 0;
 
@@ -729,6 +708,8 @@ void attachInterrupt(pin_size_t pinNumber, voidFuncPtr callback, PinStatus pinSt
 }
 
 void detachInterrupt(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	setInterruptHandler(pinNumber, nullptr);
 	disableInterrupt(pinNumber);
 }
@@ -752,6 +733,8 @@ long random(long max) {
 #endif
 
 unsigned long pulseIn(pin_size_t pinNumber, uint8_t state, unsigned long timeout) {
+	RETURN_ON_INVALID_PIN(pinNumber, LOW);
+
 	struct k_timer timer;
 	int64_t start, end, delta = 0;
 	const struct gpio_dt_spec *spec = &arduino_pins[pinNumber];
@@ -791,6 +774,8 @@ cleanup:
 }
 
 void enableInterrupt(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
@@ -799,6 +784,8 @@ void enableInterrupt(pin_size_t pinNumber) {
 }
 
 void disableInterrupt(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber);
+
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
@@ -820,8 +807,10 @@ void noInterrupts(void) {
 	}
 }
 
-int digitalPinToInterrupt(pin_size_t pin) {
-	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pin].port);
+int digitalPinToInterrupt(pin_size_t pinNumber) {
+	RETURN_ON_INVALID_PIN(pinNumber, -1);
 
-	return (pcb) ? pin : -1;
+	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+
+	return (pcb) ? pinNumber : -1;
 }

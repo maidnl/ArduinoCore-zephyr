@@ -125,6 +125,8 @@ public:
 	 * @return true on success, false on failure.
 	 */
 	bool setHorizontalMirror(bool mirror_enable);
+
+	void end();
 };
 
 #endif // __CAMERA_H__
