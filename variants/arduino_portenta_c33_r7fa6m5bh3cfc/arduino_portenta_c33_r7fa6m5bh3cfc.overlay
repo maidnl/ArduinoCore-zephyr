@@ -51,6 +51,7 @@
 
 	uart7: uart {
 		status = "okay";
+		zephyr,deferred-init;
 		current-speed = <115200>;
 	};
 };
@@ -62,6 +63,7 @@
 
 	uart6: uart {
 		status = "okay";
+		zephyr,deferred-init;
 		current-speed = <115200>;
 	};
 };
@@ -73,11 +75,70 @@
 
 	uart5: uart {
 		status = "okay";
+		zephyr,deferred-init;
 		current-speed = <115200>;
 	};
 };
 
+&uart9 {
+	status = "okay";
+	/* usart9 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
+};
+
+&spi1 {
+	zephyr,deferred-init;
+};
+
+&i2c3 {
+	zephyr,deferred-init;
+};
+
+&iic1 {
+	zephyr,deferred-init;
+};
+
 &pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	adc0_arduino: adc0_arduino {
+		group1 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 6)>; /* A0 - AN006 */
+			renesas,analog-enable;
+		};
+		group2 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 5)>; /* A1 - AN005 */
+			renesas,analog-enable;
+		};
+		group3 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 4)>; /* A2 - AN004 */
+			renesas,analog-enable;
+		};
+		group4 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 2)>; /* A3 - AN002 */
+			renesas,analog-enable;
+		};
+		group5 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 1)>; /* A4 - AN001 */
+			renesas,analog-enable;
+		};
+		group6 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 15)>; /* A5 - AN013/P015 */
+			renesas,analog-enable;
+		};
+		group7 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 14)>; /* A6 - AN012/P014 */
+			renesas,analog-enable;
+		};
+		group8 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 0)>; /* A7 - AN000 */
+			renesas,analog-enable;
+		};
+	};
+
 	iic0_default: iic0_default {
 		group1 {
 			/* SCL0 SDA0 */
@@ -90,6 +151,7 @@
 
 &iic0 {
 	status = "okay";
+	zephyr,deferred-init;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	interrupts = <87 1>, <88 1>, <89 1>, <90 1>;
@@ -99,7 +161,56 @@
 	pinctrl-names = "default";
 };
 
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+	interrupts = <71 1>, <72 1>;
+	interrupt-names = "gtioca", "overflow";
+};
+
+&pwm3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm3_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+	interrupts = <65 1>, <66 1>;
+	interrupt-names = "gtioca", "overflow";
+};
+
+&pwm7 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm7_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+	interrupts = <67 1>, <68 1>;
+	interrupt-names = "gtioca", "overflow";
+};
+
+&pwm8 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm8_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+	interrupts = <69 1>, <70 1>;
+	interrupt-names = "gtioca", "overflow";
+};
+
 &adc0 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&adc0_arduino>;
+	pinctrl-names = "default", "sleep", "arduino";
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -289,13 +400,21 @@
                         <&ioport4 0 GPIO_ACTIVE_LOW>,
                         <&ioport8 0 GPIO_ACTIVE_LOW>;
 
-		pwm-pin-gpios =	<&ioport6 0 0>;
+		pwm-pin-gpios =	<&ioport1 5 0>,
+				    <&ioport1 6 0>,
+				    <&ioport1 11 0>,
+				    <&ioport3 3 0>,
+				    <&ioport6 1 0>;	/* D6 - P601: shares GPT6B with D4; also eth_clock pin */
 
 		serials = <&board_cdc_acm_uart>, <&uart9>, <&uart7>, <&uart6>, <&uart5>;
 		cdc-acm = <&board_cdc_acm_uart>;
 		i2cs = <&iic0>, <&iic1>, <&i2c3>;
 		spis = <&spi1>;
-		pwms = <&pwm6 1 PWM_HZ(25000000) PWM_POLARITY_NORMAL>;
+		pwms = <&pwm1 0 PWM_HZ(25000000) PWM_POLARITY_NORMAL>,
+		       <&pwm8 1 PWM_HZ(25000000) PWM_POLARITY_NORMAL>,
+		       <&pwm3 0 PWM_HZ(25000000) PWM_POLARITY_NORMAL>,
+		       <&pwm7 1 PWM_HZ(25000000) PWM_POLARITY_NORMAL>,
+		       <&pwm6 1 PWM_HZ(25000000) PWM_POLARITY_NORMAL>;	/* D6 - same channel as D4 */
 
 		io-channels =	<&adc0 6>,
 				<&adc0 5>,

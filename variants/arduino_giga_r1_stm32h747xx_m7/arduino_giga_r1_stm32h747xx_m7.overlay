@@ -13,7 +13,7 @@
 
 &usart1 {
 	status = "okay";
-	zephyr,deferred-init;
+	/* usart1 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
         pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pb7>;
 	pinctrl-1 = <&analog_pa9 &analog_pb7>;
 	pinctrl-names = "default", "sleep";
@@ -144,7 +144,6 @@
 	pwm8: pwm {
 		status = "okay";
 		zephyr,deferred-init;
-		/* Re-enable shared pin for SPI5/PWM dynamic switching */
 		pinctrl-0 = <>;
 		pinctrl-1 = <&analog_pj8 &analog_pj10>;
 		pinctrl-2 = <&tim8_ch1_pj8 &tim8_ch2_pj10>;
@@ -159,7 +158,6 @@
 	pwm12: pwm {
 		status = "okay";
 		zephyr,deferred-init;
-		/* PH6 is shared with SPI5 SCK on D13 */
 		pinctrl-0 = <>;
 		pinctrl-1 = <&analog_ph6>;
 		pinctrl-2 = <&tim12_ch1_ph6>;
