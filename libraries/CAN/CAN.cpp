@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "zephyrInternal.h"
 #include <CAN.h>
 #include <string.h>
 #include <zephyr/sys/util_macro.h>
@@ -33,7 +34,10 @@ bool arduino::ZephyrCAN::beginFD(CanBitRate arbitration_bitrate, uint32_t data_b
 
 bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, uint32_t data_bitrate,
 								bool bitrate_switch) {
-	(void)device_init(_dev);
+	/* Init device and re-apply DEFAULT pinctrl state so shared pins
+	 * are remuxed back to CAN after other peripherals have used them.
+	 */
+	(void)init_dev_apply_pinctrl(_dev);
 
 	/* Bitrate can only be changed while the controller is stopped. */
 	(void)can_stop(_dev);

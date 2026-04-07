@@ -14,6 +14,10 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C CXX)
 
+# Define custom pinctrl state "arduino" for dynamic pin multiplexing
+# Must be set before Zephyr drivers are compiled
+zephyr_compile_options(-DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
 
 # Memory region relocation based on Kconfig
