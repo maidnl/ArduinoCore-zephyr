@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
+#include <zephyr/dt-bindings/pwm/stm32_pwm.h>
 &i2c4 {
 	status = "okay";
 	pinctrl-0 = <&i2c4_scl_pd12 &i2c4_sda_pd13>;
@@ -33,7 +33,7 @@
 	zephyr,deferred-init;
 	pinctrl-0 = <&i2c3_scl_pc0 &i2c3_sda_pc1>;
 	pinctrl-1 = <&analog_pc0 &analog_pc1>;
-	pinctrl-names = "default" "sleep"; 
+	pinctrl-names = "default", "sleep"; 
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -95,20 +95,20 @@
 	};
 };
 
-
 /* Enable PWM timers */
 &timers1 {
-	status = "okay";
-	st,prescaler = <4>;
+    status = "okay";
+    st,prescaler = <4>;
 
-	pwm1: pwm {
-		status = "okay";
-		zephyr,deferred-init;
-		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_pa11 &analog_pb15 &analog_pb13 &analog_pb14>;
-		pinctrl-2 = <&tim1_ch4_pa11 &tim1_ch3n_pb15 &tim1_ch1n_pb13 &tim1_ch2n_pb14>;
-		pinctrl-names = "default", "sleep", "arduino";
-	};
+    pwm1: pwm {
+        status = "okay";
+        zephyr,deferred-init;
+        pinctrl-0 = <>;
+        /* 2. REORDERED: PA11(CH4), PB15(CH3N), PB14(CH2N), PB13(CH1N) to match pwms list */
+        pinctrl-1 = <&analog_pa11 &analog_pb15 &analog_pb14 &analog_pb13>;
+        pinctrl-2 = <&tim1_ch4_pa11 &tim1_ch3n_pb15 &tim1_ch2n_pb14 &tim1_ch1n_pb13>;
+        pinctrl-names = "default", "sleep", "arduino";
+    };
 };
 
 /* Currently only the pins marked with ~ on the pin headers are enabled */
@@ -121,8 +121,8 @@
 		status = "okay";
 		zephyr,deferred-init;
 		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_pb3 &analog_pb10 &analog_pb11>;
-		pinctrl-2 = <&tim2_ch2_pb3 &tim2_ch3_pb10 &tim2_ch4_pb11>;
+		pinctrl-1 = <&analog_pb3 &analog_pb11 &analog_pb10>;
+		pinctrl-2 = <&tim2_ch2_pb3 &tim2_ch4_pb11 &tim2_ch3_pb10>;
 		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
@@ -368,13 +368,13 @@
 		       <&pwm3 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D3/PB0 → TIM3_CH3 */
 		       <&pwm1 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D5/PA11 → TIM1_CH4 */
 		       <&pwm3 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D6/PB1 → TIM3_CH4 */
-		       <&pwm8 4 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D7/PB2 → TIM8_CH4N */
+		       <&pwm8 4 PWM_HZ(500) (PWM_POLARITY_INVERTED | STM32_PWM_COMPLEMENTARY)>, /* D7/PB2 → TIM8_CH4N */
 		       <&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D8/PB4 → TIM3_CH1 */
 		       <&pwm4 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D9/PB8 → TIM4_CH3 */
 		       <&pwm4 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D10/PB9 → TIM4_CH4 */
-		       <&pwm1 3 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D11/PB15 → TIM1_CH3N */
-		       <&pwm1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D12/PB14 → TIM1_CH2N */
-		       <&pwm1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>, /* D13/PB13 → TIM1_CH1N */
+		       <&pwm1 3 PWM_HZ(500) (PWM_POLARITY_INVERTED | STM32_PWM_COMPLEMENTARY)>, /* D11/PB15 → TIM1_CH3N */
+		       <&pwm1 2 PWM_HZ(500) (PWM_POLARITY_INVERTED | STM32_PWM_COMPLEMENTARY)>, /* D12/PB14 → TIM1_CH2N */
+		       <&pwm1 1 PWM_HZ(500) (PWM_POLARITY_INVERTED | STM32_PWM_COMPLEMENTARY)>, /* D13/PB13 → TIM1_CH1N */
 		       <&pwm2 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D20/PB11 → TIM2_CH4 */
 		       <&pwm2 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,   /* D21/PB10 → TIM2_CH3 */
 		       <&pwm5 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,   /* LED3_R/PH10 → TIM5_CH1 */
