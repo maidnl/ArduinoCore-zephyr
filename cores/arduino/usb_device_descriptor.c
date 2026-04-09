@@ -11,7 +11,9 @@
 #include <zephyr/usb/bos.h>
 
 #include <zephyr/logging/log.h>
+#if __has_include(<variant.h>)
 #include <variant.h>
+#endif
 
 #ifdef CONFIG_USB_DEVICE_STACK_NEXT
 
