@@ -790,7 +790,7 @@ gertrude.build.extra_flags=
 gertrude.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 gertrude.build.board=GERTRUDE
 gertrude.build.zephyr_hals=hal_stm32
-gertrude.build.extra_flags=-DARDUINO_ROUTER_SERIAL=Serial
+gertrude.build.extra_flags=
 gertrude.compiler.zephyr=
 gertrude.vid.0=0x2341
 gertrude.pid.0=0x0080
@@ -854,7 +854,7 @@ ventunoq.build.extra_flags=
 ventunoq.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 ventunoq.build.board=VENTUNO_Q
 ventunoq.build.zephyr_hals=hal_stm32
-ventunoq.build.extra_flags=-DARDUINO_ROUTER_SERIAL=Serial
+ventunoq.build.extra_flags=
 ventunoq.compiler.zephyr=
 ventunoq.vid.0=0x2341
 ventunoq.pid.0=0x0080

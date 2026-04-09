@@ -320,7 +320,7 @@ struct backup_store {
 	uint8_t fan_control_buffer[256];
 	uint8_t leds_control_buffer[256];
 };
-__stm32_backup_sram_section struct backup_store backup;
+static __stm32_backup_sram_section struct backup_store backup;
 
 static void on_fan_changed(const struct device *dev, void *user_data)
 {

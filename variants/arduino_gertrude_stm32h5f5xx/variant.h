@@ -4,6 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if !ARDUINO_LIBRARY_DISCOVERY_PHASE
+#if __has_include("Arduino_RouterBridge.h")
+#if __has_include("routerbridge_provides_serial.h")
+#define ARDUINO_ROUTERBRIDGE_PROVIDES_SERIAL
+#else
+#error "Please update the Arduino_RouterBridge library to the latest version to ensure Serial support on this board."
+#endif
+#endif
+#endif
+
+#define LOADER_PROVIDES_EXTRA_USB_CLASSES
+
 // TODO: correctly handle these legacy defines
 #define MOSI    0
 #define MISO    0

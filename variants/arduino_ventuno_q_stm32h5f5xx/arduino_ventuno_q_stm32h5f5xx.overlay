@@ -167,8 +167,10 @@
 				    <&gpioe 14 0>,
 				    <&gpioe 15 0>;
 
-		serials = <&board_cdc_acm_uart>, <&usart3>;
-		cdc-acm = <&board_cdc_acm_uart>;
+		arduino,router-serial = <&board_cdc_acm_uart>; /* 'Serial' is provided by the Monitor */
+		cdc-acm-serial = <&board_cdc_acm_uart>;
+		serials = <&usart3>, <&board_cdc_acm_uart>;
+
 		i2cs = <&i2c2>, <&i2c4>, <&i2c3>;
 		spis = <&spi2>, <&spi3>;
 
