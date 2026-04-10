@@ -20,6 +20,7 @@
 #include "Arduino.h"
 #include "camera.h"
 
+#include <zephyrInternal.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/video.h>
@@ -60,7 +61,7 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	}
 
 	if (!begin_device(this->vdev)) {
-		return;
+		return false;
 	}
 
 	switch (pixformat) {
