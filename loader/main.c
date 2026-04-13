@@ -122,7 +122,7 @@ __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
 struct backup_store {
 	uint32_t wait_for_app_magic;
 };
-volatile __stm32_backup_sram_section struct backup_store backup;
+extern volatile __stm32_backup_sram_section struct backup_store backup;
 
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;

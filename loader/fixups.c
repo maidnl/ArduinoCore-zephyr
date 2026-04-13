@@ -255,6 +255,15 @@ int disable_vrefbuf() {
 SYS_INIT(disable_vrefbuf, POST_KERNEL, 0);
 #endif
 
+#if defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q) || defined(CONFIG_BOARD_ARDUINO_UNO_Q)
+struct backup_store {
+	uint32_t wait_for_app_magic;
+	uint32_t magic;
+	uint8_t fan_control_buffer[256];
+	uint8_t leds_control_buffer[256];
+};
+volatile __stm32_backup_sram_section struct backup_store backup;
+#endif
 
 #if defined(CONFIG_BOARD_ARDUINO_GERTRUDE) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 
@@ -314,13 +323,6 @@ static const struct device *fan_eeprom = DEVICE_DT_GET(DT_NODELABEL(fan_control)
 static const struct device *gpio_eeprom = DEVICE_DT_GET(DT_NODELABEL(gpio_control));
 static const struct device *fan_pwm = DEVICE_DT_GET(DT_NODELABEL(pwm16));
 static const struct device *fan_tach = DEVICE_DT_GET(DT_NODELABEL(pwm14));
-
-struct backup_store {
-	uint32_t magic;
-	uint8_t fan_control_buffer[256];
-	uint8_t leds_control_buffer[256];
-};
-static __stm32_backup_sram_section struct backup_store backup;
 
 static void on_fan_changed(const struct device *dev, void *user_data)
 {
