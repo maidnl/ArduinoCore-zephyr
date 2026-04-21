@@ -12,26 +12,36 @@
     };
 };
 
+&lpuart1 {
+	status = "okay";
+    /* lpuart1 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
+};
+
 /* I2C buses */
 &i2c1 {
     status = "okay";
+    zephyr,deferred-init;
 };
 
 &i2c2 {
     status = "okay";
+    zephyr,deferred-init;
 };
 
 &i2c3 {
     status = "okay";
+    zephyr,deferred-init;
 };
 
 /* SPI buses */
 &spi4 {
     status = "okay";
+    zephyr,deferred-init;
 };
 
 &spi5 {
     status = "okay";
+    zephyr,deferred-init;
 };
 
 &rtc {
@@ -48,6 +58,7 @@
 
     pwm1: pwm {
         status = "okay";
+        zephyr,deferred-init;
         pinctrl-0 = <&tim1_ch3_pj9 &tim1_ch1_pk1>;
         pinctrl-names = "default";
     };
@@ -61,6 +72,7 @@
 
     pwm8: pwm {
         status = "okay";
+        zephyr,deferred-init;
         pinctrl-0 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
         pinctrl-names = "default";
     };
@@ -72,12 +84,14 @@
 
     pwm12: pwm {
         status = "okay";
+        zephyr,deferred-init;
         pinctrl-0 = <&tim12_ch1_ph6>;
         pinctrl-names = "default";
     };
 };
 
 &adc1 {
+    zephyr,deferred-init;
     pinctrl-0 = <&adc1_inp4_pc4>;
     pinctrl-names = "default";
     st,adc-clock-source = "SYNC";
@@ -105,6 +119,7 @@
 };
 
 &adc2 {
+    zephyr,deferred-init;
     pinctrl-0 = <&adc2_inp2_pf13>;
     pinctrl-names = "default";
     st,adc-clock-source = "SYNC";

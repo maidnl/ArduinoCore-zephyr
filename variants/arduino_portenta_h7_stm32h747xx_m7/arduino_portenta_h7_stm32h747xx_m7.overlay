@@ -10,14 +10,17 @@
 
 &usart1 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &uart4 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &usart6 {
 	status = "okay";
+	/* usart6 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
 };
 
 &rtc {
@@ -35,6 +38,7 @@
 
 &i2c3 {
 	status = "okay";
+	zephyr,deferred-init;
 
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
@@ -68,14 +72,17 @@
 
 &i2c1 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &i2c4 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &spi2 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&spi2_sck_pi1
 		     &spi2_miso_pc2 &spi2_mosi_pc3>;
 	pinctrl-names = "default";
@@ -87,6 +94,7 @@
 
 	pwm1: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pj11>;
 		pinctrl-names = "default";
 	};
@@ -98,6 +106,7 @@
 
 	pwm3: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <&tim3_ch1_pc6 &tim3_ch2_pc7>;
 		pinctrl-names = "default";
 	};
@@ -109,6 +118,7 @@
 
 	pwm8: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
 		pinctrl-names = "default";
 	};
@@ -120,6 +130,7 @@
 
 	pwm12: pwm {
 		status = "okay";
+		zephyr,deferred-init;
 		pinctrl-0 = <&tim12_ch1_ph6>;
 		pinctrl-names = "default";
 	};
@@ -174,6 +185,7 @@
 
 
 &adc1 {
+	zephyr,deferred-init;
 	pinctrl-0 = <&adc1_inp12_pc2
       		     &adc1_inp13_pc3
       		     &adc1_inp18_pa4

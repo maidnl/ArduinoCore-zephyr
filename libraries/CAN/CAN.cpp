@@ -33,11 +33,7 @@ bool arduino::ZephyrCAN::beginFD(CanBitRate arbitration_bitrate, uint32_t data_b
 
 bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, uint32_t data_bitrate,
 								bool bitrate_switch) {
-	if (!device_is_ready(_dev)) {
-		return false;
-	}
-
-	_dev->ops.init(_dev);
+	(void)device_init(_dev);
 
 	/* Bitrate can only be changed while the controller is stopped. */
 	(void)can_stop(_dev);

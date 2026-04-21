@@ -144,7 +144,8 @@
 &adc {
 	#address-cells = <1>;
 	#size-cells = <0>;
-
+	zephyr,deferred-init;
+	
 	channel@0 {
 		reg = <0>;
 		zephyr,gain = "ADC_GAIN_1_6";
@@ -262,6 +263,7 @@
 
 &pwm1 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&pwm1_default>;
 	pinctrl-1 = <&pwm1_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -269,6 +271,7 @@
 
 &pwm2 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&pwm2_default>;
 	pinctrl-1 = <&pwm2_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -276,6 +279,7 @@
 
 &i2c0 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c0_default>;
 	pinctrl-1 = <&i2c0_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -284,6 +288,7 @@
 
 &i2c1 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&i2c1_default>;
 	pinctrl-1 = <&i2c1_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -295,3 +300,7 @@
     clock-frequency = <32768>;
     prescaler = <1>;  // Optional: sets the RTC tick to ~30.5 µs
 };
+&spi2 {
+	zephyr,deferred-init;
+};
+

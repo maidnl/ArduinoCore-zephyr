@@ -50,6 +50,7 @@
 	status = "okay";
 
 	uart7: uart {
+		zephyr,deferred-init;
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -61,6 +62,7 @@
 	pinctrl-names = "default";
 
 	uart6: uart {
+		zephyr,deferred-init;
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -72,9 +74,30 @@
 	pinctrl-names = "default";
 
 	uart5: uart {
+		zephyr,deferred-init;
 		status = "okay";
 		current-speed = <115200>;
 	};
+};
+
+&uart9 {
+	status = "okay";
+	/* usart9 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
+};
+
+&spi1 {
+	zephyr,deferred-init;
+};
+
+&sci3 {
+	status = "okay";
+	i2c3: i2c {
+		status = "okay";
+	};
+};
+
+&iic1 {
+	zephyr,deferred-init;
 };
 
 &pinctrl {
@@ -90,6 +113,7 @@
 
 &iic0 {
 	status = "okay";
+	zephyr,deferred-init;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	interrupts = <87 1>, <88 1>, <89 1>, <90 1>;
@@ -111,6 +135,7 @@
 };
 
 &adc0 {
+	zephyr,deferred-init;
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
