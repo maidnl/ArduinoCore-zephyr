@@ -269,6 +269,9 @@ volatile __stm32_backup_sram_section struct backup_store backup;
 
 #include <cannectivity/usb/class/gs_usb.h>
 
+int cannectivity_led_init(void);
+int cannectivity_timestamp_init(void);
+
 static const struct gs_usb_ops gs_usb_ops = {
 #ifdef CONFIG_CANNECTIVITY_TIMESTAMP
 	.timestamp = cannectivity_timestamp_get,
@@ -318,6 +321,7 @@ SYS_INIT(enable_cannectivity, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/drivers/i2c/target/eeprom.h>
 
 static const struct device *fan_eeprom = DEVICE_DT_GET(DT_NODELABEL(fan_control));
 static const struct device *gpio_eeprom = DEVICE_DT_GET(DT_NODELABEL(gpio_control));

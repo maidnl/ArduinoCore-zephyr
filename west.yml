@@ -22,8 +22,8 @@ manifest:
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: ventuno_q
+      remote: facchinm
+      revision: ventuno_q_4.4
       import:
         name-allowlist:
           - cmsis
