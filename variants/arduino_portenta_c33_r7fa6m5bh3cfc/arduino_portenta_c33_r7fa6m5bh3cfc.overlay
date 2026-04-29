@@ -104,6 +104,7 @@
 
 &iic1 {
 	zephyr,deferred-init;
+	clock-frequency = <DT_FREQ_K(400)>;
 };
 
 &pinctrl {

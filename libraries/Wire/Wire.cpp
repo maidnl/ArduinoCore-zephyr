@@ -67,6 +67,14 @@ void arduino::ZephyrI2C::begin() {
 
 void arduino::ZephyrI2C::begin(uint8_t slaveAddr) {
 	begin();
+	Serial.print("Wire Address: ");
+	Serial.println((uint32_t)this, HEX);
+
+	Serial.print("GetInstance Address: ");
+	Serial.println((uint32_t)getInstance(&i2c_cfg), HEX);
+	Serial.print("i2c_target_write_received_cb Address: ");
+	Serial.println((uint32_t)i2c_target_write_received_cb, HEX);
+
 	i2c_cfg.address = slaveAddr;
 	i2c_cfg.callbacks = &target_callbacks;
 
