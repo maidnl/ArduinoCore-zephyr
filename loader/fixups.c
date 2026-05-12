@@ -409,12 +409,57 @@ void tacho_thd(void *arg1, void *arg2, void *arg3) {
 }
 K_THREAD_DEFINE(tacho, 512, tacho_thd, NULL, NULL, NULL, 5, 0, 1000);
 
+const struct gpio_dt_spec power_button =
+	GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), power_button_gpios, 0);
+
+const struct gpio_dt_spec power_button_follower =
+	GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), power_button_gpios, 1);
+
+const struct gpio_dt_spec force_reboot =
+	GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), power_button_gpios, 2);
+
+
+void power_button_work_handler(struct k_work *work) {
+	gpio_pin_set_dt(&led3r, 1);
+	// If still pressed, force reboot, otherwise just set the follower pin to 1
+	if (gpio_pin_get_dt(&power_button) == 0) {
+		gpio_pin_configure_dt(&force_reboot, GPIO_INPUT | GPIO_PULL_UP);
+		while (1);
+	}
+}
+
+K_WORK_DELAYABLE_DEFINE(power_button_work, power_button_work_handler);
+
+void button_irq(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
+	int status = gpio_pin_get_dt(&power_button);
+	gpio_pin_set_dt(&power_button_follower, !status);
+
+	if (status) {
+		k_work_cancel_delayable(&power_button_work);
+	} else {
+		k_work_schedule(&power_button_work, K_SECONDS(10));
+	}
+}
+
+static struct gpio_callback button_cb_data;
+
 int system_utilities(void) {
 
 	/* Linux Ready GPIO input */
 	const struct gpio_dt_spec spec =
 			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
 	gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
+
+	const struct gpio_dt_spec EDL_mode =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 1);
+	gpio_pin_configure_dt(&EDL_mode, GPIO_INPUT);
+
+	gpio_pin_configure_dt(&power_button, GPIO_INPUT | GPIO_PULL_UP);
+	gpio_init_callback(&button_cb_data, button_irq, BIT(power_button.pin));
+	gpio_add_callback(power_button.port, &button_cb_data);
+	gpio_pin_interrupt_configure_dt(&power_button, GPIO_INT_EDGE_BOTH);
+	gpio_pin_configure_dt(&power_button_follower, GPIO_OUTPUT | GPIO_PULL_DOWN);
+	gpio_pin_configure_dt(&force_reboot, GPIO_OUTPUT | GPIO_PULL_DOWN);
 
 	/* Backup memory */
 	const struct device *const backup_memory = DEVICE_DT_GET_ONE(st_stm32_backup_sram);

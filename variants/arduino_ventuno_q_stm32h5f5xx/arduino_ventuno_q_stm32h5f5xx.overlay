@@ -187,8 +187,14 @@
 		dac-channels = <1>;
 		dac-resolution = <12>;
 
-		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>;    /* Internal SPI RDY, connected to GPIO_MD_95 */
 		analog-switch-gpios = <&gpioi 8 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
+
+		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>,    /* Internal SPI RDY, connected to GPIO_MD_95 */
+				<&gpiok 10 GPIO_ACTIVE_HIGH>;    /* if read as 0, we are in USB flashing mode */
+
+		power-button-gpios = <&gpiok 13 GPIO_ACTIVE_HIGH>,  /* Read as vertical button press */
+				     <&gpiog 9 GPIO_ACTIVE_HIGH>,   /* Should follow vertical button */
+				     <&gpiok 11 GPIO_ACTIVE_HIGH>;  /* Force to 1 to reboot the board */
 
 		fan-gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>,
 				<&gpiog 15 GPIO_ACTIVE_HIGH>;
