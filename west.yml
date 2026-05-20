@@ -17,13 +17,15 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: maidnl
+      url-base: https://github.com/maidnl
     - name: bcmi
       url-base: git@github.com:bcmi-labs
 
   projects:
     - name: zephyr
-      remote: facchinm
-      revision: ventuno_q_4.4
+      remote: maidnl
+      revision: core_4.4_rc
       import:
         name-allowlist:
           - cmsis
