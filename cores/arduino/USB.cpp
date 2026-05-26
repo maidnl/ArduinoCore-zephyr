@@ -61,11 +61,9 @@ int arduino::SerialUSB_::enable_usb_device_next(void) {
 		return -ENODEV;
 	}
 
-	if (!usbd_can_detect_vbus(_usbd)) {
-		err = usbd_enable(_usbd);
-		if (err) {
-			return err;
-		}
+	err = usbd_enable(_usbd);
+	if (err) {
+		return err;
 	}
 	return 0;
 }
