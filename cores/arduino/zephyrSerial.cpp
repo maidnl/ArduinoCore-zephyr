@@ -76,7 +76,8 @@ void arduino::ZephyrSerial::IrqHandler() {
 	int length;
 	int ret = 0;
 
-	if (!uart_irq_update(uart)) {
+	uart_irq_update(uart);
+	if (!uart_irq_is_pending(uart)) {
 		return;
 	}
 
