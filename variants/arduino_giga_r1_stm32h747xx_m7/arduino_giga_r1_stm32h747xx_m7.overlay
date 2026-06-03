@@ -54,6 +54,7 @@
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
 		reg = <0x3c>;
+		zephyr,deferred-init;
 		reset-gpios = <&gpiod 4 GPIO_ACTIVE_LOW>;
 		pwdn-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
 
@@ -173,6 +174,7 @@
 	/* Use the pwmclock node to start the clock generation */
 	pwmclock: pwmclock {
 		status = "okay";
+		zephyr,deferred-init;
 		compatible = "pwm-clock";
 		clock-frequency = <0>;
 		#clock-cells = <1>;
