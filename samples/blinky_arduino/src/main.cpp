@@ -6,6 +6,8 @@
 
 #include <Arduino.h>
 
+#define LED_BUILTIN D3
+
 /* 1000 msec = 1 sec */
 #define SLEEP_TIME_MS 1000
 
