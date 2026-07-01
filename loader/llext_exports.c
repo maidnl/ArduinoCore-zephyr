@@ -29,10 +29,10 @@
  * and returns a plain pointer.  LLEXT callers dereference it with no TLS
  * mechanism involved on their side.
  */
-int *arduino_errno_ptr(void)
-{
+int *arduino_errno_ptr(void) {
 	return &errno;
 }
+
 EXPORT_SYMBOL(arduino_errno_ptr);
 
 #define FORCE_EXPORT_SYM(name)                                                                     \
@@ -400,7 +400,6 @@ FORCE_EXPORT_SYM(flash_area_open);
 FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);
 FORCE_EXPORT_SYM(flash_area_erase);
-FORCE_EXPORT_SYM(flash_area_close);
 #endif
 
 #if defined(CONFIG_FILE_SYSTEM)
