@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+
+&flash0 {
+	partitions {
+		slot0_partition: partition@0 {
+			label = "loader";
+			reg = <0x00000000 0x00100000>;
+		};
+
+		user_sketch: partition@100000 {
+			label = "user_sketch";
+			reg = <0x00100000 0x00300000>;
+		};
+	};
+};
+
+/ {
+	zephyr,user {
+		digital-pin-gpios =  <&gpioa 10 GPIO_ACTIVE_HIGH>,   /* D0 DETECT IN */
+				    <&gpioa 9 GPIO_ACTIVE_HIGH>,               /* D1 DETECT OUT */
+				    <&gpiob 7 GPIO_ACTIVE_HIGH>,               /* D2 LED_ROW_1 */
+				    <&gpioc 13 GPIO_ACTIVE_HIGH>,              /* D3 LED_ROW_2 */
+					 <&gpioa 15 GPIO_ACTIVE_HIGH>,              /* D4 LED_ROW_3 */
+					 <&gpioc 14 GPIO_ACTIVE_HIGH>,				  /* D5 LED_ROW_4 */
+				    <&gpioa 8 GPIO_ACTIVE_HIGH>,					  /* D6 RESET-MCU */
+				    <&gpioc 15 GPIO_ACTIVE_HIGH>,              /* D7 BOOT-MCU */
+				    <&gpioa 0 GPIO_ACTIVE_HIGH>,					  /* D8 - ADC */
+				    <&gpioa 1 GPIO_ACTIVE_HIGH>,					  /* D9 - ADC */
+				    <&gpioa 2 GPIO_ACTIVE_HIGH>,					  /* D10 - ADC */
+				    <&gpioa 3 GPIO_ACTIVE_HIGH>,					  /* D11 - ADC */
+				    <&gpioa 4 GPIO_ACTIVE_HIGH>,					  /* D12 - ADC */
+				    <&gpioa 5 GPIO_ACTIVE_HIGH>,					  /* D13 - ADC */
+				    <&gpioa 6 GPIO_ACTIVE_HIGH>,					  /* D14 - ADC */
+				    <&gpioa 7 GPIO_ACTIVE_HIGH>,					  /* D15 - ADC */
+				    <&gpiob 0 GPIO_ACTIVE_HIGH>,					  /* D16 - ADC */
+				    <&gpiob 1 GPIO_ACTIVE_HIGH>;					  /* D17 - ADC */
+
+		led-row-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>,
+						    <&gpioc 13 GPIO_ACTIVE_HIGH>,
+							 <&gpioa 15 GPIO_ACTIVE_HIGH>,
+							 <&gpioc 14 GPIO_ACTIVE_HIGH>;
+
+		adc-pin-gpios = <&gpioa 0 0>,
+				    <&gpioa 1 0>,
+				    <&gpioa 2 0>,
+				    <&gpioa 3 0>,
+				    <&gpioa 4 0>,
+				    <&gpioa 5 0>,
+				    <&gpioa 6 0>,
+				    <&gpioa 7 0>,
+				    <&gpiob 0 0>,
+				    <&gpiob 1 0>;
+
+		io-channels = <&adc1 0>,
+						  <&adc1 1>,
+						  <&adc1 2>,
+						  <&adc1 3>,
+						  <&adc1 4>,
+						  <&adc1 5>,
+						  <&adc1 6>,
+						  <&adc1 7>,
+			           <&adc2 6>,
+				        <&adc2 7>;
+		pwm-pin-gpios = <&gpiob 2 0>;
+		cdc-acm-serial = <&board_cdc_acm_uart>;
+		serials = <&uart5>, <&usart3>;
+		i2cs = <&i2c1>;
+		spis = <&spi2>;
+		pwms = <&pwm2 4 PWM_HZ(12000000) PWM_POLARITY_NORMAL>;
+	};
+};
+
