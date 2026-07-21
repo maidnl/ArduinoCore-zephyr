@@ -754,7 +754,7 @@ mezza.build.float-abi=-mfloat-abi=hard
 mezza.build.extra_flags=
 mezza.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 mezza.build.board=MEZZA
-mezza.build.zephyr_hals=hal_stm32
+mezza.build.zephyr_hals=hal_stm32 mbedtls
 mezza.build.extra_flags=
 mezza.compiler.zephyr=
 mezza.vid.0=0x2341
@@ -787,64 +787,64 @@ mezza.bootloader.target=stm32h5f5xx
 
 ##############################################################################################################
 
-mezza_in.name=Arduino MezzaIn
-mezza_in.build.core=arduino
-mezza_in.build.crossprefix=arm-zephyr-eabi-
-mezza_in.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+mezza_in_main.name=Arduino MezzaIn
+mezza_in_main.build.core=arduino
+mezza_in_main.build.crossprefix=arm-zephyr-eabi-
+mezza_in_main.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
 
-mezza_in.menu.link_mode.dynamic=Dynamic
-mezza_in.menu.link_mode.static=Static
-mezza_in.menu.link_mode.static.build.link_mode=static
-mezza_in.menu.link_mode.static.upload.extension=bin-zsk.bin
+mezza_in_main.menu.link_mode.dynamic=Dynamic
+mezza_in_main.menu.link_mode.static=Static
+mezza_in_main.menu.link_mode.static.build.link_mode=static
+mezza_in_main.menu.link_mode.static.upload.extension=bin-zsk.bin
 
-mezza_in.menu.wait_linux_boot.yes=Wait for Linux
-mezza_in.menu.wait_linux_boot.no=Immediate
-mezza_in.menu.wait_linux_boot.no.build.boot_mode=immediate
-mezza_in.menu.wait_linux_boot.app=Wait for App
-mezza_in.menu.wait_linux_boot.app.build.boot_mode=app
-mezza_in.openocd_cfg=flash_sketch.cfg
+mezza_in_main.menu.wait_linux_boot.yes=Wait for Linux
+mezza_in_main.menu.wait_linux_boot.no=Immediate
+mezza_in_main.menu.wait_linux_boot.no.build.boot_mode=immediate
+mezza_in_main.menu.wait_linux_boot.app=Wait for App
+mezza_in_main.menu.wait_linux_boot.app.build.boot_mode=app
+mezza_in_main.openocd_cfg=flash_sketch.cfg
 
-mezza_in.build.zephyr_target=arduino_mezza_in
-mezza_in.build.zephyr_args=
-mezza_in.build.variant=arduino_mezza_in_stm32h5f5xx
-mezza_in.build.artifact=zephyr_main
-mezza_in.build.subarch=zephyr
-mezza_in.build.mcu=cortex-m33
-mezza_in.build.fpu=-mfpu=fpv5-sp-d16
-mezza_in.build.architecture=cortex-m33
-mezza_in.compiler.zephyr.arch.define=
+mezza_in_main.build.zephyr_target=arduino_mezza_in/main
+mezza_in_main.build.zephyr_args=
+mezza_in_main.build.variant=arduino_mezza_in_main_stm32h5f5xx
+mezza_in_main.build.artifact=zephyr_main
+mezza_in_main.build.subarch=zephyr
+mezza_in_main.build.mcu=cortex-m33
+mezza_in_main.build.fpu=-mfpu=fpv5-sp-d16
+mezza_in_main.build.architecture=cortex-m33
+mezza_in_main.compiler.zephyr.arch.define=
 
-mezza_in.build.float-abi=-mfloat-abi=hard
-mezza_in.build.extra_flags=
-mezza_in.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-mezza_in.build.board=MEZZA_IN
-mezza_in.build.zephyr_hals=hal_stm32
-mezza_in.build.extra_flags=
-mezza_in.compiler.zephyr=
-mezza_in.vid.0=0x2341
-mezza_in.pid.0=0x0080
-mezza_in.vid.1=0x1209
-mezza_in.pid.1=0xca01
-mezza_in.upload_port.0.vid=0x2341
-mezza_in.upload_port.0.pid=0x0080
-mezza_in.upload.address=0x80F0000
-mezza_in.upload.target=stm32h5f5xx
+mezza_in_main.build.float-abi=-mfloat-abi=hard
+mezza_in_main.build.extra_flags=
+mezza_in_main.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+mezza_in_main.build.board=MEZZA_IN
+mezza_in_main.build.zephyr_hals=hal_stm32
+mezza_in_main.build.extra_flags=
+mezza_in_main.compiler.zephyr=
+mezza_in_main.vid.0=0x2341
+mezza_in_main.pid.0=0x0080
+mezza_in_main.vid.1=0x1209
+mezza_in_main.pid.1=0xca01
+mezza_in_main.upload_port.0.vid=0x2341
+mezza_in_main.upload_port.0.pid=0x0080
+mezza_in_main.upload.address=0x80F0000
+mezza_in_main.upload.target=stm32h5f5xx
 
-mezza_in.upload.tool=remoteocd
-mezza_in.upload.tool.default=remoteocd
-mezza_in.upload.tool.network=remoteocd_network
-mezza_in.upload.protocol=
-mezza_in.upload.transport=
-mezza_in.upload.vid=0x2341
-mezza_in.upload.pid=0x017D
-mezza_in.upload.interface=0
-mezza_in.upload.use_1200bps_touch=false
-mezza_in.upload.wait_for_upload_port=false
-mezza_in.upload.native_usb=true
-mezza_in.upload.maximum_size=1966080
-mezza_in.upload.maximum_data_size=523624
+mezza_in_main.upload.tool=remoteocd
+mezza_in_main.upload.tool.default=remoteocd
+mezza_in_main.upload.tool.network=remoteocd_network
+mezza_in_main.upload.protocol=
+mezza_in_main.upload.transport=
+mezza_in_main.upload.vid=0x2341
+mezza_in_main.upload.pid=0x017D
+mezza_in_main.upload.interface=0
+mezza_in_main.upload.use_1200bps_touch=false
+mezza_in_main.upload.wait_for_upload_port=false
+mezza_in_main.upload.native_usb=true
+mezza_in_main.upload.maximum_size=1966080
+mezza_in_main.upload.maximum_data_size=523624
 
-mezza_in.bootloader.tool=remoteocd
-mezza_in.bootloader.tool.default=remoteocd
-mezza_in.bootloader.file=zephyr-{build.variant}.elf
-mezza_in.bootloader.target=stm32c552xx
+mezza_in_main.bootloader.tool=remoteocd
+mezza_in_main.bootloader.tool.default=remoteocd
+mezza_in_main.bootloader.file=zephyr-{build.variant}.elf
+mezza_in_main.bootloader.target=stm32c552xx
