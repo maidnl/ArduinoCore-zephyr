@@ -113,8 +113,8 @@ fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
-(set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
-rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+(set -e ; cd ${IMAGE_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
+rsync -a --delete ${IMAGE_DIR}/llext-edk ${VARIANT_DIR}/
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -134,18 +134,20 @@ perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
+    if [ -f ${IMAGE_DIR}/zephyr/zephyr.signed.$ext ]; then
+	cp ${IMAGE_DIR}/zephyr/zephyr.signed.$ext firmwares/zephyr-$variant.$ext
+    elif [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
+        cp ${IMAGE_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
+cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
