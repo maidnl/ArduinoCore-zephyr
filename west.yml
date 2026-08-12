@@ -17,11 +17,13 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: maidnl
+      url-base: https://github.com/maidnl
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.4.1+
+      remote: maidnl
+      revision: mezza_dev_mcuboot-rebase-on-v4.4.1
       import:
         name-allowlist:
           - cmsis
