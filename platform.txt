@@ -270,7 +270,8 @@ tools.dfu-util.loader.args.without_sketch={leave.dfuse}
 
 tools.dfu-util.upload.params.verbose=-d
 tools.dfu-util.upload.params.quiet=
-tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
+# tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
+tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
 
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
