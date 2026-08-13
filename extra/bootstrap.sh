@@ -64,6 +64,7 @@ west config manifest.project-filter -- "$HAL_FILTER"
 west update "$@"
 west zephyr-export
 pip3 install -r ../zephyr/scripts/requirements-base.txt
+pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt 
 log_msg "endgroup"
 
 TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do
