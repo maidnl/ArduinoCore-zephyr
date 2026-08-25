@@ -23,7 +23,7 @@ manifest:
   projects:
     - name: zephyr
       remote: maidnl
-      revision: mezza_dev_mcuboot-rebase-on-v4.4.1
+      revision: mezza_dev_mcuboot-on-v4.4.1+
       import:
         name-allowlist:
           - cmsis
