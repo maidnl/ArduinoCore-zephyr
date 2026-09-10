@@ -23,7 +23,7 @@
 	};
 };
 
-&flash0 {
+&code_flash {
 	partitions {
 		mcuboot: partition@0 {
 			label = "mcuboot";
@@ -40,7 +40,7 @@
 	};
 };
 
-&flash1 {
+&data_flash {
     // Conflicts with "storage" partition
 	/delete-node/ partitions;
 };
