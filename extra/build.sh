@@ -93,7 +93,23 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+
+# Only arduino_mezza currently needs an MCUboot companion image, which
+# requires a sysbuild (multi-image) build. All other boards keep the
+# original single-image 'west build' invocation and output layout.
+#
+# Under sysbuild, the loader's own build tree is namespaced under
+# ${BUILD_DIR}/loader (instead of directly under ${BUILD_DIR}), and the
+# 'llext-edk' target is not part of the default sysbuild 'all' target, so
+# it must be built separately against the loader image's own build dir.
+if [ x"$target" == x"arduino_mezza" ]; then
+	IMAGE_DIR=${BUILD_DIR}/loader
+	west build -d ${BUILD_DIR} -b ${target} --sysbuild loader ${args}
+	cmake --build ${IMAGE_DIR} --target llext-edk
+else
+	IMAGE_DIR=${BUILD_DIR}
+	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
