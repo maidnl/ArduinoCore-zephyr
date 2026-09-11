@@ -594,7 +594,7 @@ static bool slot1_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state 
 }
 
 static struct usbd_dfu_flash_data slot1_data = {
-	.id = FIXED_PARTITION_ID(slot1_partition),
+	.id = PARTITION_ID(slot1_partition),
 };
 
 USBD_DFU_DEFINE_IMG(loader_image, "loader_image", &slot1_data, dfu_flash_read, dfu_flash_write,
@@ -613,7 +613,7 @@ static bool user_sketch_next(void *priv, enum usb_dfu_state state, enum usb_dfu_
 }
 
 static struct usbd_dfu_flash_data user_sketch_data = {
-	.id = FIXED_PARTITION_ID(user_sketch),
+	.id = PARTITION_ID(user_sketch),
 };
 
 USBD_DFU_DEFINE_IMG(user_sketch_image, "user_sketch_image", &user_sketch_data, dfu_flash_read,
