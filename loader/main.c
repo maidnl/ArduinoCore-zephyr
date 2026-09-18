@@ -5,6 +5,7 @@
  */
 
 #include "zephyr/sys/printk.h"
+#include <stdint.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sketch);
 
@@ -41,11 +42,28 @@ struct sketch_header_v1 {
 
 #define SKETCH_RAM_BUFFER_LEN 131072
 
+#define MCU_BOOT_HEADER_OFFSET 32
+
 /* Need to replicate logic from zephyrSerial.h to avoid C++ here */
 #define ZARD_BOARD_HAS_SERIALUSB                                                                   \
 	DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm_serial) && CONFIG_USBD_CDC_ACM_CLASS
 #define ZARD_FIRST_SERIAL_IS_SERIALUSB                                                             \
 	ZARD_BOARD_HAS_SERIALUSB && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
+
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+struct dynamic_dfu_data {
+	const struct device *flash_dev;
+	uint32_t sketch_addr;
+	uint32_t erase_size;
+	uint32_t block_num;
+	uint32_t current_offset;
+};
+
+static struct dynamic_dfu_data dfu_state = {.sketch_addr = 0, /* To be set at runtime */
+											.erase_size = 0,
+											.block_num = 0,
+											.current_offset = 0};
+#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 const struct device *const usb_dev =
@@ -116,9 +134,11 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 #endif /* CONFIG_USERSPACE */
 
 /* Export Flash parameters for use by core building scripts */
+#ifndef CONFIG_BOARD_ARDUINO_MEZZA
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
+#endif
 
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
@@ -152,16 +172,28 @@ static int loader(const struct shell *sh) {
 	int rc;
 
 	/* Test that attempting to open a disabled flash area fails */
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
+#else
 	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
+#endif
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
 	}
 
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	uintptr_t base_addr = dfu_state.sketch_addr;
+#else
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
+#endif
 
 	char header[HEADER_LEN];
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	rc = flash_area_read(fa, base_addr, header, sizeof(header));
+#else
 	rc = flash_area_read(fa, 0, header, sizeof(header));
+#endif
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
@@ -597,32 +629,106 @@ static struct usbd_dfu_flash_data slot1_data = {
 	.id = PARTITION_ID(slot1_partition),
 };
 
-USBD_DFU_DEFINE_IMG(loader_image, "loader_image", &slot1_data, dfu_flash_read, dfu_flash_write,
-		    slot1_next);
+USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, dfu_flash_write,
+					slot1_next);
 
-/* User sketch update image: writes directly to the user_sketch partition */
-static bool user_sketch_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state next) {
-	ARG_UNUSED(priv);
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* ---------------------- DYNAMIC DFU ALTERNATE ----------------------------- */
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-	if (state == DFU_MANIFEST_SYNC && next == DFU_IDLE) {
-		LOG_INF("Sketch update download finished");
-		/* TODO: verify the sketch signature before marking it usable */
+
+
+static int dynamic_flash_write(void *const priv, const uint32_t block, const uint16_t size,
+							   const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
+	struct dynamic_dfu_data *const data = priv;
+	int err;
+
+	if (size == 0) {
+		return 0; /* Nothing to write */
 	}
 
-	return true;
+	/* Block 0 indicates the start of a new DFU transfer */
+	if (block == 0) {
+		if (data->flash_dev == NULL || !device_is_ready(data->flash_dev)) {
+			LOG_ERR("Flash device not configured");
+			return -ENODEV;
+		}
+
+		if (data->sketch_addr == 0 || data->erase_size == 0 || data->block_num == 0) {
+			LOG_ERR("Flash parameter not set");
+			return -EINVAL;
+		}
+
+		data->current_offset = 0;
+
+		LOG_INF("Erase header (1) 0x%08x bytes at 0x%08x", data->erase_size, 0);
+		/* TODO */
+		printk("Erase header (1) 0x%08x bytes at 0x%08x", data->erase_size, 0);
+
+		/* Erase the target region before writing */
+		err = flash_erase(data->flash_dev, 0, data->erase_size);
+		if (err) {
+			LOG_ERR("Flash erase header failed (%d)", err);
+			return err;
+		}
+
+		LOG_INF("Starting DFU transfer. Erase sketch (2) 0x%08x bytes at 0x%08x",
+				data->erase_size * data->block_num, data->sketch_addr);
+		/* TODO */
+		printk("Starting DFU transfer. Erase sketch (2) 0x%08x bytes at 0x%08x",
+			   data->erase_size * data->block_num, data->sketch_addr);
+
+		/* Erase the target region before writing */
+		err = flash_erase(data->flash_dev, data->sketch_addr, data->erase_size * data->block_num);
+		if (err) {
+			LOG_ERR("Flash erase sketch failed (%d)", err);
+			return err;
+		}
+	}
+
+	data->current_offset = 0;
+	uint32_t chunk_offset = 0;
+	uint32_t remaining_size = size;
+
+	while (remaining_size > 0) {
+		uint32_t write_addr;
+		uint32_t write_size;
+
+		/* writing the HEADER */
+		if (data->current_offset < data->erase_size) {
+
+			write_addr = data->current_offset;
+			write_size = MIN(remaining_size, data->erase_size - data->current_offset);
+		} else {
+			/* We are writing to the dynamic region */
+			uint32_t dynamic_offset = data->current_offset - data->erase_size;
+			write_addr = data->sketch_addr + dynamic_offset;
+			write_size = remaining_size;
+		}
+
+		LOG_INF("Wrote %u bytes to 0x%08x", write_size, write_addr);
+
+		printk("Wrote %u bytes to 0x%08x", write_size, write_addr);
+		err = flash_write(data->flash_dev, write_addr, &buf[chunk_offset], write_size);
+		if (err) {
+			LOG_ERR("Flash write failed at 0x%08x", write_addr);
+			return err;
+		}
+
+		data->current_offset += write_size;
+		chunk_offset += write_size;
+		remaining_size -= write_size;
+	}
+
+	return 0;
 }
 
-static struct usbd_dfu_flash_data user_sketch_data = {
-	.id = PARTITION_ID(user_sketch),
-};
-
-USBD_DFU_DEFINE_IMG(user_sketch_image, "user_sketch_image", &user_sketch_data, dfu_flash_read,
-		    dfu_flash_write, user_sketch_next);
+USBD_DFU_DEFINE_IMG(sketch_image, "sketch", &dfu_state, NULL, dynamic_flash_write, slot1_next);
 
 /* +++ DFU USB CONFIGURATION and FUNCTIONS +++ */
 
 USBD_DEVICE_DEFINE(dfu_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), CONFIG_USB_DEVICE_VID,
-		   CONFIG_USB_DEVICE_PID + 0x0100);
+				   CONFIG_USB_DEVICE_PID + 0x0100);
 
 USBD_DESC_LANG_DEFINE(sample_lang);
 USBD_DESC_CONFIG_DEFINE(fs_cfg_desc, "DFU FS Configuration");
@@ -730,10 +836,53 @@ static void dfu_update(void) {
 	usbd_shutdown(&dfu_usbd);
 }
 
+void retrieve_flash_info() {
+	const struct flash_area *fa;
+	int rc;
+	uint32_t value = 0;
+
+	dfu_state.sketch_addr = 0;
+	dfu_state.erase_size = 0;
+	dfu_state.block_num = 0;
+
+	dfu_state.flash_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
+	
+	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
+	if (rc) {
+		printk("Failed to open flash area, rc %d\n", rc);
+	}
+
+	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET, &value, sizeof(value));
+	if (rc) {
+		printk("Failed to read sketch_address, rc %d\n", rc);
+	} else {
+		dfu_state.sketch_addr = value;
+	}
+
+	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 4, &value, sizeof(value));
+	if (rc) {
+		printk("Failed to read eraze size, rc %d\n", rc);
+	} else {
+		dfu_state.erase_size = value;
+	}
+
+	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 8, &value, sizeof(value));
+	if (rc) {
+		printk("Failed to read block num, rc %d\n", rc);
+	} else {
+		dfu_state.block_num = value;
+	}
+
+	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n", dfu_state.sketch_addr);
+	printk("+++++++++ ERASE SIZE: 0x%08X\n", dfu_state.erase_size);
+	printk("+++++++++ BLOCK NUM: 0x%08X\n", dfu_state.block_num);
+}
+
 #endif
 
 int main(void) {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	retrieve_flash_info();
 	if (check_boot_mode()) {
 		atomic_set(&fade_led_running, 1);
 		k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
