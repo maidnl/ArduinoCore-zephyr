@@ -134,7 +134,11 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 #endif /* CONFIG_USERSPACE */
 
 /* Export Flash parameters for use by core building scripts */
-#ifndef CONFIG_BOARD_ARDUINO_MEZZA
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+/* TODO : the _sketch_max_size is used in a improper way !!! */
+__attribute__((retain)) const uintptr_t sketch_max_size =
+	DT_REG_SIZE(DT_NODELABEL(slot1_partition));
+#else
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));

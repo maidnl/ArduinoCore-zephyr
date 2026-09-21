@@ -225,7 +225,17 @@ if [ ! -z "$board" ]; then
 	update_local_field "upload.address" "$UPLOAD_ADDR" "$UPLOAD_ADDR_COMMENT"
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
-	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	#
+	# TODO: the _sketch_max_size is used in a improper way!!!
+	#
+	if [ "$target" == "arduino_mezza" ]; then
+		TOTAL_PART_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+		LOADER_BIN_SIZE=$(stat -c%s "${IMAGE_DIR}/zephyr/zephyr.signed.bin")
+		PADDED_LOADER_SIZE=$(( (LOADER_BIN_SIZE + 8191) / 8192 * 8192 ))
+		CODE_SIZE=$(( TOTAL_PART_SIZE - PADDED_LOADER_SIZE ))
+	else
+		CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	fi
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
