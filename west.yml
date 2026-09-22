@@ -23,7 +23,7 @@ manifest:
   projects:
     - name: zephyr
       remote: maidnl
-      revision: mezza-dev-zephyr-main
+      revision: mezza-dev-new-boot-layout
       import:
         name-allowlist:
           - cmsis
