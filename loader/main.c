@@ -668,47 +668,6 @@ USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, df
 #define UPDATE_PARTITION_ID PARTITION_ID(slot1_partition)
 #define UPDATE_PARTITION_SIZE DT_REG_SIZE(DT_NODELABEL(slot1_partition))
 
-/* 
- * Writes data to flash_area while ensuring compliance with 
- * the underlying hardware's write block size alignment.
- */
-uint8_t padded_buf[CONFIG_USBD_DFU_TRANSFER_SIZE + 32];
-static int generic_flash_area_write(const struct flash_area *fa, uint32_t offset,
-                                    const uint8_t *src, size_t len)
-{
-    /* Query write block size dynamically for THIS specific flash device */
-    size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
-
-    /* 
-     * Both offset AND length must meet write block size alignment rules.
-     * Return error if offset is not aligned (indicates broken stream layout).
-     */
-    if (offset % wbs != 0) {
-        LOG_ERR("Write offset 0x%08x is not aligned to write block size (%zu)", offset, wbs);
-        return -EINVAL;
-    }
-
-    /* If length is already aligned to the write block size, write directly */
-    if (wbs <= 1 || (len % wbs) == 0) {
-        return flash_area_write(fa, offset, src, len);
-    }
-
-    /* Round length up to the nearest write block boundary */
-    size_t aligned_len = ROUND_UP(len, wbs);
-
-    /* Allocate buffer sized to max DFU transfer size + maximum padding needed */
-    if (aligned_len > sizeof(padded_buf)) {
-        LOG_ERR("Padded buffer size exceeded max DFU transfer size");
-        return -EINVAL;
-    }
-
-    /* Copy actual payload and pad trailing bytes with 0xFF (erased flash value) */
-    memcpy(padded_buf, src, len);
-    memset(padded_buf + len, 0xFF, aligned_len - len);
-
-    return flash_area_write(fa, offset, padded_buf, aligned_len);
-}
-
 static int dynamic_flash_write(void *const priv, const uint32_t block, const uint16_t size,
                                const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
     const struct flash_area *fa;
@@ -724,6 +683,9 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
         LOG_ERR("Failed to open flash area (err %d)", err);
         return err;
     }
+
+    /* Get hardware write block size directly from the flash device */
+    size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
 
     if (block == 0) {
         if (data->sketch_offset == 0 || data->erase_size == 0 || data->block_num == 0) {
@@ -768,16 +730,16 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
         if (data->current_offset < data->erase_size) {
             process_size = MIN(remaining_size, data->erase_size - data->current_offset);
             write_offset = data->current_offset;
-
-            err = generic_flash_area_write(fa, write_offset, &buf[buf_offset], process_size);
-            if (err) {
-                LOG_ERR("Flash write failed at header offset 0x%08x", write_offset);
-                goto end;
-            }
         } 
         /* Case 2: Gap between header and sketch */
         else if (data->current_offset < data->sketch_offset) {
             process_size = MIN(remaining_size, data->sketch_offset - data->current_offset);
+
+            /* Advance stream counters without writing */
+            data->current_offset += process_size;
+            buf_offset += process_size;
+            remaining_size -= process_size;
+            continue;
         } 
         /* Case 3: Sketch region */
         else {
@@ -790,12 +752,18 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
             }
 
             process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
+        }
 
-            err = generic_flash_area_write(fa, write_offset, &buf[buf_offset], process_size);
-            if (err) {
-                LOG_ERR("Flash write failed at sketch offset 0x%08x", write_offset);
-                goto end;
-            }
+        /* 
+         * Round up length to align with hardware write block size.
+         * Extra uninitialized trailing bytes from buf will be written to flash.
+         */
+        size_t write_len = ROUND_UP(process_size, wbs);
+
+        err = flash_area_write(fa, write_offset, &buf[buf_offset], write_len);
+        if (err) {
+            LOG_ERR("Flash write failed at offset 0x%08x (len %zu)", write_offset, write_len);
+            goto end;
         }
 
         data->current_offset += process_size;
