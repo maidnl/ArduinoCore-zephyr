@@ -53,13 +53,16 @@ struct sketch_header_v1 {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 struct dynamic_dfu_data {
 	const struct device *flash_dev;
+	uint32_t sketch_offset;
 	uint32_t sketch_addr;
 	uint32_t erase_size;
 	uint32_t block_num;
 	uint32_t current_offset;
 };
 
-static struct dynamic_dfu_data dfu_state = {.sketch_addr = 0, /* To be set at runtime */
+static struct dynamic_dfu_data dfu_state = {
+											.sketch_addr = 0,
+											.sketch_offset = 0,
 											.erase_size = 0,
 											.block_num = 0,
 											.current_offset = 0};
@@ -187,14 +190,17 @@ static int loader(const struct shell *sh) {
 	}
 
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
-	uintptr_t base_addr = dfu_state.sketch_addr;
+	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(slot0_partition));
+	base_addr += dfu_state.sketch_offset;
+	dfu_state.sketch_addr = base_addr;
+	printk(">>> SKETCH OFFSET = 0x%08X\n", base_addr);
 #else
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 #endif
 
 	char header[HEADER_LEN];
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
-	rc = flash_area_read(fa, base_addr, header, sizeof(header));
+	rc = flash_area_read(fa, dfu_state.sketch_offset, header, sizeof(header));
 #else
 	rc = flash_area_read(fa, 0, header, sizeof(header));
 #endif
@@ -209,9 +215,13 @@ static int loader(const struct shell *sh) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
+	} else {
+		printk("??????????????????????????\n");
 	}
 
+		printk("AAAA\n");
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
+		printk("BBBB\n");
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
 #if CONFIG_SHELL
 	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
@@ -242,10 +252,12 @@ static int loader(const struct shell *sh) {
 			break;
 		}
 	}
+		printk("CCCC\n");
 #endif
 #endif
 
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
+		printk("DDDD\n");
 	void matrixBegin(void);
 	void matrixEnd(void);
 	void matrixPlay(const uint8_t *buf, uint32_t len);
@@ -322,9 +334,11 @@ static int loader(const struct shell *sh) {
 			}
 		}
 	}
+		printk("EEEE\n");
 #endif
 
 	size_t sketch_buf_len = sketch_hdr->len;
+	printk("SKETCH LEN = %d\n", sketch_buf_len);
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
 #ifdef CONFIG_BOARD_ARDUINO_PORTENTA_C33
@@ -346,6 +360,7 @@ static int loader(const struct shell *sh) {
 		}
 #endif
 
+		printk("GGGGG\n");
 		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
 		entry_point_t entry_point = (entry_point_t)(base_addr + HEADER_LEN + 1);
@@ -356,7 +371,9 @@ static int loader(const struct shell *sh) {
 		}
 	}
 
+		printk("HHHHH\n");
 #if defined(CONFIG_LLEXT_STORAGE_WRITABLE)
+		printk("IIIII\n");
 	uint8_t *sketch_buf = k_aligned_alloc(4096, sketch_buf_len);
 
 	if (!sketch_buf) {
@@ -369,31 +386,41 @@ static int loader(const struct shell *sh) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		return rc;
 	}
+		printk("LLLLL\n");
 #else
 	// Assuming the sketch is stored in the same flash device as the loader
+		printk("MMMMM\n");
 	uint8_t *sketch_buf = (uint8_t *)base_addr;
 #endif
 
 #ifdef CONFIG_LLEXT
+		printk("NNNN sketch_buf_len = %i\n", sketch_buf_len);
 	struct llext_buf_loader buf_loader = LLEXT_BUF_LOADER(sketch_buf, sketch_buf_len);
 	struct llext_loader *ldr = &buf_loader.loader;
 
+		printk("M (1)\n");
 	LOG_HEXDUMP_DBG(sketch_buf, 4, "4 byte MAGIC");
 
+		printk("M (2)\n");
 	struct llext_load_param ldr_parm = LLEXT_LOAD_PARAM_DEFAULT;
+		printk("M (3)\n");
 	struct llext *ext;
 	int res;
 
 	res = llext_load(ldr, "sketch", &ext, &ldr_parm);
+		printk("M (4)\n");
 	if (res) {
 		printk("Failed to load sketch, rc %d\n", res);
 		return res;
 	}
+		printk("M (5)\n");
 
 	void (*main_fn)() = llext_find_sym(&ext->exp_tab, "main");
 	if (!main_fn) {
 		printk("Failed to find main function\n");
 		return -ENOENT;
+	} else {
+		printk("MAIN FUNCTION FOUND!!!!\n");
 	}
 #endif
 
@@ -420,7 +447,7 @@ static int loader(const struct shell *sh) {
 		printk("Too many memory partitions for this particular hardware\n");
 		return -1;
 	}
-
+	printk("CREATE THREAD!!\n");
 	k_thread_create(&llext_thread, llext_stack, K_THREAD_STACK_SIZEOF(llext_stack), &llext_entry,
 					llext_bootstrap, ext, main_fn, 1, K_INHERIT_PERMS, K_FOREVER);
 
@@ -670,7 +697,9 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 		printk("Erase header (1) 0x%08x bytes at 0x%08x", data->erase_size, 0);
 
 		/* Erase the target region before writing */
-		err = flash_erase(data->flash_dev, 0, data->erase_size);
+		err = flash_erase(data->flash_dev, 
+						      DT_PARTITION_ADDR(DT_NODELABEL(slot0_partition)), 
+								data->erase_size);
 		if (err) {
 			LOG_ERR("Flash erase header failed (%d)", err);
 			return err;
@@ -844,8 +873,7 @@ void retrieve_flash_info() {
 	const struct flash_area *fa;
 	int rc;
 	uint32_t value = 0;
-
-	dfu_state.sketch_addr = 0;
+	dfu_state.sketch_offset = 0;
 	dfu_state.erase_size = 0;
 	dfu_state.block_num = 0;
 
@@ -860,7 +888,7 @@ void retrieve_flash_info() {
 	if (rc) {
 		printk("Failed to read sketch_address, rc %d\n", rc);
 	} else {
-		dfu_state.sketch_addr = value;
+		dfu_state.sketch_offset = value;
 	}
 
 	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 4, &value, sizeof(value));
@@ -877,7 +905,7 @@ void retrieve_flash_info() {
 		dfu_state.block_num = value;
 	}
 
-	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n", dfu_state.sketch_addr);
+	printk("+++++++++ SKETCH OFFSET: 0x%08X\n", dfu_state.sketch_addr);
 	printk("+++++++++ ERASE SIZE: 0x%08X\n", dfu_state.erase_size);
 	printk("+++++++++ BLOCK NUM: 0x%08X\n", dfu_state.block_num);
 }
