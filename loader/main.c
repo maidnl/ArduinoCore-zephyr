@@ -730,6 +730,69 @@ static void dfu_update(void) {
 	usbd_shutdown(&dfu_usbd);
 }
 
+#include <bootutil/image.h>
+#include <bootutil/bootutil.h>
+#include <bootutil/sign_key.h>
+#include <psa/crypto.h>
+
+extern const unsigned char rsa_pub_key[];
+extern const unsigned int rsa_pub_key_len;
+
+void mcuboot_watchdog_feed(void) {
+}
+
+const struct bootutil_key bootutil_keys[] = {{.key = rsa_pub_key, .len = &rsa_pub_key_len}};
+const int bootutil_key_cnt = 1;
+
+#define SKETCH_PARTITION_ID PARTITION_ID(user_sketch)
+
+/**
+ * Validates the MCUboot signature of the sketch partition.
+ * Returns true if valid, false if invalid or missing.
+ */
+bool validate_user_sketch(void) {
+
+	const struct flash_area *fa;
+	struct image_header hdr;
+	int rc;
+	psa_crypto_init();
+	rc = flash_area_open(SKETCH_PARTITION_ID, &fa);
+	if (rc != 0) {
+		printk("Error: Could not open user_sketch partition\n");
+		return false;
+	}
+
+	rc = flash_area_read(fa, 0, &hdr, sizeof(hdr));
+	if (rc != 0) {
+		printk("Error: Could not read image header\n");
+		flash_area_close(fa);
+		return false;
+	}
+
+	if (hdr.ih_magic != IMAGE_MAGIC) {
+		printk("Error: Invalid image magic (0x%08x)\n", hdr.ih_magic);
+		flash_area_close(fa);
+		return false;
+	}
+	uint8_t proof_buf[16];
+	flash_area_read(fa, 0x450, proof_buf, sizeof(proof_buf));
+
+	uint8_t tmp_buf[512];
+	fih_ret fih_rc;
+
+	FIH_CALL(bootutil_img_validate, fih_rc, NULL, &hdr, fa, tmp_buf, sizeof(tmp_buf), NULL, 0,
+			 NULL);
+
+	flash_area_close(fa);
+
+	if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+		printk("Sketch signature verification failed!\n");
+		return false;
+	} else {
+		printk("Sketch signature verified successfully!\n");
+		return true;
+	}
+}
 #endif
 
 int main(void) {
@@ -745,6 +808,7 @@ int main(void) {
 	}
 
 #endif
+	validate_user_sketch();
 	loader(NULL);
 	return 0;
 }
