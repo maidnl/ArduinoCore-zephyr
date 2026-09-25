@@ -426,6 +426,10 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #include <zephyr/retention/bootmode.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/usb/usbd.h>
+#include <zephyr/usb/class/usbd_dfu.h>
+#include <zephyr/dfu/mcuboot.h>
+#include <zephyr/dfu/flash_img.h>
 static const struct pwm_dt_spec pwm_led = PWM_DT_SPEC_GET(DT_ALIAS(fade_led));
 
 #define FADE_DELAY_MS          10
@@ -497,10 +501,6 @@ static bool check_boot_mode() {
 	return rv;
 }
 
-#include <zephyr/usb/usbd.h>
-#include <zephyr/usb/class/usbd_dfu.h>
-#include <zephyr/dfu/mcuboot.h>
-#include <zephyr/dfu/flash_img.h>
 
 struct usbd_dfu_flash_data {
 	struct flash_img_context fi_ctx;
@@ -593,6 +593,7 @@ static bool slot1_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state 
 		LOG_INF("Loader update download finished, requesting MCUboot upgrade");
 		if (IS_ENABLED(CONFIG_BOOTLOADER_MCUBOOT)) {
 			boot_request_upgrade(false);
+			sys_reboot(SYS_REBOOT_WARM);
 		}
 	}
 
@@ -612,7 +613,7 @@ static bool user_sketch_next(void *priv, enum usb_dfu_state state, enum usb_dfu_
 
 	if (state == DFU_MANIFEST_SYNC && next == DFU_IDLE) {
 		LOG_INF("Sketch update download finished");
-		/* TODO: verify the sketch signature before marking it usable */
+	   sys_reboot(SYS_REBOOT_WARM);
 	}
 
 	return true;
