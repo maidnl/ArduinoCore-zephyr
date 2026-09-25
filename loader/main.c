@@ -147,6 +147,12 @@ struct backup_store {
 };
 extern volatile __stm32_backup_sram_section struct backup_store backup;
 
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+#define SKETCH_OFFSET 1024
+#else
+#define SKETCH_OFFSET 0
+#endif
+
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
@@ -158,10 +164,10 @@ static int loader(const struct shell *sh) {
 		return rc;
 	}
 
-	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
+	uintptr_t base_addr = SKETCH_OFFSET + DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 
 	char header[HEADER_LEN];
-	rc = flash_area_read(fa, 0, header, sizeof(header));
+	rc = flash_area_read(fa, SKETCH_OFFSET, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
@@ -214,7 +220,7 @@ static int loader(const struct shell *sh) {
 	void matrixEnd(void);
 	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
-	void matrixGrayscaleWrite(uint8_t *buf);
+	void matrixGrayscaleWrite(uint8_t * buf);
 #include "bootanimation.h"
 #include "usbanimation.h"
 
@@ -424,7 +430,7 @@ static const struct pwm_dt_spec pwm_led = PWM_DT_SPEC_GET(DT_ALIAS(fade_led));
 
 #define FADE_DELAY_MS          10
 #define FADE_STEPS             50
-#define FADE_THREAD_STACK_SIZE 1024
+#define FADE_THREAD_STACK_SIZE 512
 
 K_THREAD_STACK_DEFINE(fade_led_stack, FADE_THREAD_STACK_SIZE);
 static struct k_thread fade_led_thread;
@@ -758,19 +764,19 @@ bool validate_user_sketch(void) {
 	psa_crypto_init();
 	rc = flash_area_open(SKETCH_PARTITION_ID, &fa);
 	if (rc != 0) {
-		printk("Error: Could not open user_sketch partition\n");
+		LOG_ERR("Error: Could not open user_sketch partition\n");
 		return false;
 	}
 
 	rc = flash_area_read(fa, 0, &hdr, sizeof(hdr));
 	if (rc != 0) {
-		printk("Error: Could not read image header\n");
+		LOG_ERR("Error: Could not read image header\n");
 		flash_area_close(fa);
 		return false;
 	}
 
 	if (hdr.ih_magic != IMAGE_MAGIC) {
-		printk("Error: Invalid image magic (0x%08x)\n", hdr.ih_magic);
+		LOG_ERR("Error: Invalid image magic (0x%08x)\n", hdr.ih_magic);
 		flash_area_close(fa);
 		return false;
 	}
@@ -786,10 +792,10 @@ bool validate_user_sketch(void) {
 	flash_area_close(fa);
 
 	if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
-		printk("Sketch signature verification failed!\n");
+		LOG_ERR("FAILED sketch signature verification - sketch will not be started!\n");
 		return false;
 	} else {
-		printk("Sketch signature verified successfully!\n");
+		LOG_INF("SKETCH signature is correct. Sketch will now start.\n");
 		return true;
 	}
 }
@@ -797,7 +803,7 @@ bool validate_user_sketch(void) {
 
 int main(void) {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
-	if (check_boot_mode()) {
+	if (check_boot_mode() || !validate_user_sketch()) {
 		atomic_set(&fade_led_running, 1);
 		k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
 						blink_fade_led, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
@@ -806,9 +812,7 @@ int main(void) {
 		atomic_clear(&fade_led_running);
 		k_thread_join(&fade_led_thread, K_FOREVER);
 	}
-
 #endif
-	validate_user_sketch();
 	loader(NULL);
 	return 0;
 }
