@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/ {
+	aliases {
+		error-led = &led_reset_red;
+	};
+};
+
 &usart6 {
 	status = "okay";
 	pinctrl-0 = <&usart6_tx_pg14 &usart6_rx_pg9>;

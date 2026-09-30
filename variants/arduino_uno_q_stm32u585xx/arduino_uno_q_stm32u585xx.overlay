@@ -4,6 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
+/ {
+	aliases {
+		error-led = &led3_red;
+	};
+};
+
 &i2c4 {
 	status = "okay";
 	zephyr,deferred-init;

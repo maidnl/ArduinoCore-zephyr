@@ -6,6 +6,12 @@
 
 #include <zephyr/dt-bindings/pwm/stm32_pwm.h>
 
+/ {
+	aliases {
+		error-led = &red_led_0;
+	};
+};
+
 &timers17 {
 	status = "okay";
 	st,prescaler = <4>;
