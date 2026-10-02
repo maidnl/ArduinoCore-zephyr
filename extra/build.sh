@@ -134,9 +134,7 @@ perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${IMAGE_DIR}/zephyr/zephyr.signed.$ext ]; then
-	cp ${IMAGE_DIR}/zephyr/zephyr.signed.$ext firmwares/zephyr-$variant.$ext
-    elif [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
+    if [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
         cp ${IMAGE_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
