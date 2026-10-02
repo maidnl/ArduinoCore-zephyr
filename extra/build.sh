@@ -126,9 +126,7 @@ perl -i -pe "s/${c_comment}//gs unless /${line_preproc_ok}/ || (/${line_comment_
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${IMAGE_DIR}/zephyr/zephyr.signed.$ext ]; then
-	cp ${IMAGE_DIR}/zephyr/zephyr.signed.$ext firmwares/zephyr-$variant.$ext
-    elif [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
+    if [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
         cp ${IMAGE_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
