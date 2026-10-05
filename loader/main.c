@@ -58,6 +58,7 @@ struct dynamic_dfu_data {
 	uint32_t erase_size;
 	uint32_t block_num;
 	uint32_t current_offset;
+	bool custom_padding;
 };
 
 static struct dynamic_dfu_data dfu_state = {
@@ -657,6 +658,16 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 		return 0;
 	}
 
+	/* In case there is no custom padding the sketch is automatically alined
+	 * at the first flash block after the loader, so we start to delete the
+	 * sketch from there*/
+	uint32_t start_offset = data->sketch_offset;
+	if (dfu_state.custom_padding) {
+		start_offset = (data->sketch_offset / data->erase_size) * data->erase_size;
+		LOG_INF("Custom padding is applied, start update at offset %d (0x%08X)", start_offset,
+				start_offset);
+	}
+
 	err = flash_area_open(UPDATE_PARTITION_ID, &fa);
 	if (err) {
 		LOG_ERR("Failed to open flash area (err %d)", err);
@@ -692,7 +703,7 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 
 		LOG_INF("Erase sketch (2) 0x%08x bytes at offset 0x%08x", sketch_total_size,
 				data->sketch_offset);
-		err = flash_area_erase(fa, data->sketch_offset, sketch_total_size);
+		err = flash_area_erase(fa, start_offset, sketch_total_size);
 		if (err) {
 			LOG_ERR("Flash area erase failed - 2 (%d)", err);
 			goto end;
@@ -712,8 +723,8 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 			write_offset = data->current_offset;
 		}
 		/* Case 2: Gap between header and sketch */
-		else if (data->current_offset < data->sketch_offset) {
-			process_size = MIN(remaining_size, data->sketch_offset - data->current_offset);
+		else if (data->current_offset < start_offset) {
+			process_size = MIN(remaining_size, start_offset - data->current_offset);
 
 			/* Advance stream counters without writing */
 			data->current_offset += process_size;
@@ -876,6 +887,7 @@ void retrieve_flash_info() {
 	dfu_state.sketch_offset = 0;
 	dfu_state.erase_size = 0;
 	dfu_state.block_num = 0;
+	dfu_state.custom_padding = false;
 
 	dfu_state.flash_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
 
@@ -908,10 +920,22 @@ void retrieve_flash_info() {
 	dfu_state.sketch_addr = DT_PARTITION_ADDR(DT_NODELABEL(slot0_partition));
 	dfu_state.sketch_addr += dfu_state.sketch_offset;
 
+	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 12, &value, sizeof(value));
+	if (rc) {
+		printk("Failed to read custom padding setting, rc %d\n", rc);
+	} else {
+		if (value == 1) {
+			dfu_state.custom_padding = false;
+		} else {
+			dfu_state.custom_padding = true;
+		}
+	}
+
 	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n", dfu_state.sketch_addr);
 	printk("+++++++++ SKETCH OFFSET: 0x%08X\n", dfu_state.sketch_offset);
 	printk("+++++++++ ERASE SIZE: 0x%08X\n", dfu_state.erase_size);
 	printk("+++++++++ BLOCK NUM: 0x%08X\n", dfu_state.block_num);
+	printk("+++++++++ CUSTOM PADDING: %i\n", value);
 }
 
 #endif
