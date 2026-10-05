@@ -61,11 +61,7 @@ struct dynamic_dfu_data {
 };
 
 static struct dynamic_dfu_data dfu_state = {
-											.sketch_addr = 0,
-											.sketch_offset = 0,
-											.erase_size = 0,
-											.block_num = 0,
-											.current_offset = 0};
+	.sketch_addr = 0, .sketch_offset = 0, .erase_size = 0, .block_num = 0, .current_offset = 0};
 #endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
@@ -213,13 +209,9 @@ static int loader(const struct shell *sh) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
-	} else {
-		printk("??????????????????????????\n");
 	}
 
-		printk("AAAA\n");
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
-		printk("BBBB\n");
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
 #if CONFIG_SHELL
 	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
@@ -250,17 +242,15 @@ static int loader(const struct shell *sh) {
 			break;
 		}
 	}
-		printk("CCCC\n");
 #endif
 #endif
 
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
-		printk("DDDD\n");
 	void matrixBegin(void);
 	void matrixEnd(void);
 	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
-	void matrixGrayscaleWrite(uint8_t *buf);
+	void matrixGrayscaleWrite(uint8_t * buf);
 #include "bootanimation.h"
 #include "usbanimation.h"
 
@@ -332,7 +322,6 @@ static int loader(const struct shell *sh) {
 			}
 		}
 	}
-		printk("EEEE\n");
 #endif
 
 	size_t sketch_buf_len = sketch_hdr->len;
@@ -369,9 +358,7 @@ static int loader(const struct shell *sh) {
 		}
 	}
 
-		printk("HHHHH\n");
 #if defined(CONFIG_LLEXT_STORAGE_WRITABLE)
-		printk("IIIII\n");
 	uint8_t *sketch_buf = k_aligned_alloc(4096, sketch_buf_len);
 
 	if (!sketch_buf) {
@@ -384,41 +371,31 @@ static int loader(const struct shell *sh) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		return rc;
 	}
-		printk("LLLLL\n");
 #else
 	// Assuming the sketch is stored in the same flash device as the loader
-		printk("MMMMM\n");
 	uint8_t *sketch_buf = (uint8_t *)base_addr;
 #endif
 
 #ifdef CONFIG_LLEXT
-		printk("NNNN sketch_buf_len = %i\n", sketch_buf_len);
 	struct llext_buf_loader buf_loader = LLEXT_BUF_LOADER(sketch_buf, sketch_buf_len);
 	struct llext_loader *ldr = &buf_loader.loader;
 
-		printk("M (1)\n");
 	LOG_HEXDUMP_DBG(sketch_buf, 4, "4 byte MAGIC");
 
-		printk("M (2)\n");
 	struct llext_load_param ldr_parm = LLEXT_LOAD_PARAM_DEFAULT;
-		printk("M (3)\n");
 	struct llext *ext;
 	int res;
 
 	res = llext_load(ldr, "sketch", &ext, &ldr_parm);
-		printk("M (4)\n");
 	if (res) {
 		printk("Failed to load sketch, rc %d\n", res);
 		return res;
 	}
-		printk("M (5)\n");
 
 	void (*main_fn)() = llext_find_sym(&ext->exp_tab, "main");
 	if (!main_fn) {
 		printk("Failed to find main function\n");
 		return -ENOENT;
-	} else {
-		printk("MAIN FUNCTION FOUND!!!!\n");
 	}
 #endif
 
@@ -481,6 +458,12 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #include <zephyr/retention/bootmode.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/usb/usbd.h>
+#include <zephyr/usb/class/usbd_dfu.h>
+#include <zephyr/dfu/mcuboot.h>
+#include <zephyr/dfu/flash_img.h>
+#include <zephyr/sys/reboot.h>
+
 static const struct pwm_dt_spec pwm_led = PWM_DT_SPEC_GET(DT_ALIAS(fade_led));
 
 #define FADE_DELAY_MS          10
@@ -552,11 +535,6 @@ static bool check_boot_mode() {
 	return rv;
 }
 
-#include <zephyr/usb/usbd.h>
-#include <zephyr/usb/class/usbd_dfu.h>
-#include <zephyr/dfu/mcuboot.h>
-#include <zephyr/dfu/flash_img.h>
-
 struct usbd_dfu_flash_data {
 	struct flash_img_context fi_ctx;
 	uint32_t last_block;
@@ -569,7 +547,7 @@ struct usbd_dfu_flash_data {
 };
 
 static int dfu_flash_read(void *const priv, const uint32_t block, const uint16_t size,
-			   uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
+						  uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
 	struct usbd_dfu_flash_data *const data = priv;
 	const struct flash_area *fa;
 	uint32_t to_upload;
@@ -608,7 +586,7 @@ static int dfu_flash_read(void *const priv, const uint32_t block, const uint16_t
 }
 
 static int dfu_flash_write(void *const priv, const uint32_t block, const uint16_t size,
-			    const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
+						   const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
 	struct usbd_dfu_flash_data *const data = priv;
 	const bool flush = (size == 0);
 	int ret;
@@ -648,6 +626,7 @@ static bool slot1_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state 
 		LOG_INF("Loader update download finished, requesting MCUboot upgrade");
 		if (IS_ENABLED(CONFIG_BOOTLOADER_MCUBOOT)) {
 			boot_request_upgrade(false);
+			sys_reboot(SYS_REBOOT_COLD);
 		}
 	}
 
@@ -665,115 +644,116 @@ USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, df
 /* ---------------------- DYNAMIC DFU ALTERNATE ----------------------------- */
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#define UPDATE_PARTITION_ID PARTITION_ID(slot1_partition)
+#define UPDATE_PARTITION_ID   PARTITION_ID(slot1_partition)
 #define UPDATE_PARTITION_SIZE DT_REG_SIZE(DT_NODELABEL(slot1_partition))
 
 static int dynamic_flash_write(void *const priv, const uint32_t block, const uint16_t size,
-                               const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
-    const struct flash_area *fa;
-    struct dynamic_dfu_data *const data = priv;
-    int err;
+							   const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
+	const struct flash_area *fa;
+	struct dynamic_dfu_data *const data = priv;
+	int err;
 
-    if (size == 0) {
-        return 0;
-    }
+	if (size == 0) {
+		return 0;
+	}
 
-    err = flash_area_open(UPDATE_PARTITION_ID, &fa);
-    if (err) {
-        LOG_ERR("Failed to open flash area (err %d)", err);
-        return err;
-    }
+	err = flash_area_open(UPDATE_PARTITION_ID, &fa);
+	if (err) {
+		LOG_ERR("Failed to open flash area (err %d)", err);
+		return err;
+	}
 
-    /* Get hardware write block size directly from the flash device */
-    size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
+	/* Get hardware write block size directly from the flash device */
+	size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
 
-    if (block == 0) {
-        if (data->sketch_offset == 0 || data->erase_size == 0 || data->block_num == 0) {
-            LOG_ERR("Flash parameter not set");
-            err = -EINVAL;
-            goto end;
-        }
+	if (block == 0) {
+		if (data->sketch_offset == 0 || data->erase_size == 0 || data->block_num == 0) {
+			LOG_ERR("Flash parameter not set");
+			err = -EINVAL;
+			goto end;
+		}
 
-        uint32_t sketch_total_size = data->erase_size * data->block_num;
+		uint32_t sketch_total_size = data->erase_size * data->block_num;
 
-        if ((data->sketch_offset + sketch_total_size) > UPDATE_PARTITION_SIZE) {
-            LOG_ERR("Sketch offset exceeds partition size");
-            err = -ENOSPC;
-            goto end;
-        }
+		if ((data->sketch_offset + sketch_total_size) > UPDATE_PARTITION_SIZE) {
+			LOG_ERR("Sketch offset exceeds partition size");
+			err = -ENOSPC;
+			goto end;
+		}
 
-        data->current_offset = 0;
+		data->current_offset = 0;
 
-        LOG_INF("Erase header (1) 0x%08x bytes at offset 0", data->erase_size);
-        err = flash_area_erase(fa, 0, data->erase_size);
-        if (err) {
-            LOG_ERR("Flash area erase failed (%d)", err);
-            goto end;
-        }
+		LOG_INF("Erase header (1) 0x%08x bytes at offset 0", data->erase_size);
+		err = flash_area_erase(fa, 0, data->erase_size);
+		if (err) {
+			LOG_ERR("Flash area erase failed (%d)", err);
+			goto end;
+		}
 
-        LOG_INF("Erase sketch (2) 0x%08x bytes at offset 0x%08x", sketch_total_size, data->sketch_offset);
-        err = flash_area_erase(fa, data->sketch_offset, sketch_total_size);
-        if (err) {
-            LOG_ERR("Flash area erase failed - 2 (%d)", err);
-            goto end;
-        }
-    }
+		LOG_INF("Erase sketch (2) 0x%08x bytes at offset 0x%08x", sketch_total_size,
+				data->sketch_offset);
+		err = flash_area_erase(fa, data->sketch_offset, sketch_total_size);
+		if (err) {
+			LOG_ERR("Flash area erase failed - 2 (%d)", err);
+			goto end;
+		}
+	}
 
-    uint32_t buf_offset = 0;
-    uint32_t remaining_size = size;
+	uint32_t buf_offset = 0;
+	uint32_t remaining_size = size;
 
-    while (remaining_size > 0) {
-        uint32_t write_offset;
-        uint32_t process_size;
+	while (remaining_size > 0) {
+		uint32_t write_offset;
+		uint32_t process_size;
 
-        /* Case 1: Header region */
-        if (data->current_offset < data->erase_size) {
-            process_size = MIN(remaining_size, data->erase_size - data->current_offset);
-            write_offset = data->current_offset;
-        } 
-        /* Case 2: Gap between header and sketch */
-        else if (data->current_offset < data->sketch_offset) {
-            process_size = MIN(remaining_size, data->sketch_offset - data->current_offset);
+		/* Case 1: Header region */
+		if (data->current_offset < data->erase_size) {
+			process_size = MIN(remaining_size, data->erase_size - data->current_offset);
+			write_offset = data->current_offset;
+		}
+		/* Case 2: Gap between header and sketch */
+		else if (data->current_offset < data->sketch_offset) {
+			process_size = MIN(remaining_size, data->sketch_offset - data->current_offset);
 
-            /* Advance stream counters without writing */
-            data->current_offset += process_size;
-            buf_offset += process_size;
-            remaining_size -= process_size;
-            continue;
-        } 
-        /* Case 3: Sketch region */
-        else {
-            write_offset = data->current_offset;
+			/* Advance stream counters without writing */
+			data->current_offset += process_size;
+			buf_offset += process_size;
+			remaining_size -= process_size;
+			continue;
+		}
+		/* Case 3: Sketch region */
+		else {
+			write_offset = data->current_offset;
 
-            if (write_offset >= UPDATE_PARTITION_SIZE) {
-                LOG_ERR("Write offset 0x%08x exceeds partition size", write_offset);
-                err = -ENOSPC;
-                goto end;
-            }
+			if (write_offset >= UPDATE_PARTITION_SIZE) {
+				LOG_ERR("Write offset 0x%08x exceeds partition size", write_offset);
+				err = -ENOSPC;
+				goto end;
+			}
 
-            process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
-        }
+			process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
+		}
 
-        /* 
-         * Round up length to align with hardware write block size.
-         * Extra uninitialized trailing bytes from buf will be written to flash.
-         */
-        size_t write_len = ROUND_UP(process_size, wbs);
+		/*
+		 * Round up length to align with hardware write block size.
+		 * Extra uninitialized trailing bytes from buf will be written to flash.
+		 */
+		size_t write_len = ROUND_UP(process_size, wbs);
 
-        err = flash_area_write(fa, write_offset, &buf[buf_offset], write_len);
-        if (err) {
-            LOG_ERR("Flash write failed at offset 0x%08x (len %zu)", write_offset, write_len);
-            goto end;
-        }
+		err = flash_area_write(fa, write_offset, &buf[buf_offset], write_len);
+		if (err) {
+			LOG_ERR("Flash write failed at offset 0x%08x (len %zu)", write_offset, write_len);
+			goto end;
+		}
 
-        data->current_offset += process_size;
-        buf_offset += process_size;
-        remaining_size -= process_size;
-    }
+		data->current_offset += process_size;
+		buf_offset += process_size;
+		remaining_size -= process_size;
+	}
 
 end:
-    flash_area_close(fa);
-    return err;
+	flash_area_close(fa);
+	return err;
 }
 
 USBD_DFU_DEFINE_IMG(sketch_image, "sketch", &dfu_state, NULL, dynamic_flash_write, slot1_next);
@@ -898,7 +878,7 @@ void retrieve_flash_info() {
 	dfu_state.block_num = 0;
 
 	dfu_state.flash_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
-	
+
 	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
@@ -927,8 +907,8 @@ void retrieve_flash_info() {
 
 	dfu_state.sketch_addr = DT_PARTITION_ADDR(DT_NODELABEL(slot0_partition));
 	dfu_state.sketch_addr += dfu_state.sketch_offset;
-	
-	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n",dfu_state.sketch_addr);
+
+	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n", dfu_state.sketch_addr);
 	printk("+++++++++ SKETCH OFFSET: 0x%08X\n", dfu_state.sketch_offset);
 	printk("+++++++++ ERASE SIZE: 0x%08X\n", dfu_state.erase_size);
 	printk("+++++++++ BLOCK NUM: 0x%08X\n", dfu_state.block_num);
