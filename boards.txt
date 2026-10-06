@@ -756,7 +756,7 @@ mezza.build.mcu=cortex-m33
 mezza.build.fpu=-mfpu=fpv5-sp-d16
 mezza.build.architecture=cortex-m33
 mezza.compiler.zephyr.arch.define=
-mezza.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/{bootloader.file}" --pem_file "{build.variant.path}/root-rsa-2048.pem" --erase_flash_dim 8192 --image_version 1.0.0.0
+mezza.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.variant.path}/root-rsa-2048.pem" --erase_flash_dim 8192 --image_version 1.0.0.0
 
 mezza.build.float-abi=-mfloat-abi=hard
 mezza.build.extra_flags=
@@ -785,13 +785,14 @@ mezza.upload.dfuse=
 mezza.upload_port.0.vid=0x2341
 mezza.upload_port.0.pid=0x017B
 mezza.upload.target=stm32h5f5xx
+mezza.upload.artifacts.sketch={runtime.platform.path}/firmwares/zephyr-{build.variant}.signed.bin
 
 mezza.leave.dfuse=
 mezza.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
 
 mezza.bootloader.tool=dfu-util
 mezza.bootloader.tool.default=dfu-util
-mezza.bootloader.file=zephyr-{build.variant}.bin
+mezza.bootloader.file=zephyr-{build.variant}.signed.bin
 mezza.bootloader.vid=0x2341
 mezza.bootloader.pid=0x017B
 mezza.bootloader.native_usb=true
