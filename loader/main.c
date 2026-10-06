@@ -901,26 +901,26 @@ void retrieve_flash_info() {
 
 	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
 	if (rc) {
-		printk("Failed to open flash area, rc %d\n", rc);
+		LOG_ERR("Failed to open flash area, rc %d\n", rc);
 	}
 
 	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET, &value, sizeof(value));
 	if (rc) {
-		printk("Failed to read sketch_address, rc %d\n", rc);
+		LOG_ERR("Failed to read sketch_address, rc %d\n", rc);
 	} else {
 		dfu_state.sketch_offset = value;
 	}
 
 	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 4, &value, sizeof(value));
 	if (rc) {
-		printk("Failed to read eraze size, rc %d\n", rc);
+		LOG_ERR("Failed to read eraze size, rc %d\n", rc);
 	} else {
 		dfu_state.erase_size = value;
 	}
 
 	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 8, &value, sizeof(value));
 	if (rc) {
-		printk("Failed to read block num, rc %d\n", rc);
+		LOG_ERR("Failed to read block num, rc %d\n", rc);
 	} else {
 		dfu_state.block_num = value;
 	}
@@ -930,7 +930,7 @@ void retrieve_flash_info() {
 
 	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET + 12, &value, sizeof(value));
 	if (rc) {
-		printk("Failed to read custom padding setting, rc %d\n", rc);
+		LOG_ERR("Failed to read custom padding setting, rc %d\n", rc);
 	} else {
 		if (value == 1) {
 			dfu_state.custom_padding = false;
@@ -939,11 +939,11 @@ void retrieve_flash_info() {
 		}
 	}
 
-	printk("+++++++++ SKETCH ADDRESS: 0x%08X\n", dfu_state.sketch_addr);
-	printk("+++++++++ SKETCH OFFSET: 0x%08X\n", dfu_state.sketch_offset);
-	printk("+++++++++ ERASE SIZE: 0x%08X\n", dfu_state.erase_size);
-	printk("+++++++++ BLOCK NUM: 0x%08X\n", dfu_state.block_num);
-	printk("+++++++++ CUSTOM PADDING: %i\n", value);
+	LOG_INF("sketch address: 0x%08X\n", dfu_state.sketch_addr);
+	LOG_INF("sketch offset: 0x%08X\n", dfu_state.sketch_offset);
+	LOG_INF("erase size: 0x%08X\n", dfu_state.erase_size);
+	LOG_INF("sketch block number: 0x%08X\n", dfu_state.block_num);
+	LOG_INF("custom padding: %i\n", value);
 }
 
 #endif
