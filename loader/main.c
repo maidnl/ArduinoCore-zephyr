@@ -627,7 +627,6 @@ static bool slot1_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state 
 		LOG_INF("Loader update download finished, requesting MCUboot upgrade");
 		if (IS_ENABLED(CONFIG_BOOTLOADER_MCUBOOT)) {
 			boot_request_upgrade(false);
-			sys_reboot(SYS_REBOOT_COLD);
 		}
 	}
 
@@ -874,10 +873,19 @@ static void dfu_update(void) {
 
 	k_sem_take(&dfu_update_sem, K_FOREVER);
 
+	/*
+	 * Add a short delay to allow the host (dfu-util) to request
+	 * and read the final DFU status before we kill the connection.
+	 */
+	k_msleep(500);
+
 	LOG_INF("DFU operation fulfilled. Deinitializing USB...");
 
 	usbd_disable(&dfu_usbd);
 	usbd_shutdown(&dfu_usbd);
+
+	LOG_INF("Rebooting to apply MCUboot upgrade...");
+	sys_reboot(SYS_REBOOT_COLD);
 }
 
 void retrieve_flash_info() {
