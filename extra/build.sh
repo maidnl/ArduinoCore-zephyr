@@ -124,6 +124,9 @@ line_continuation='\\$' # match lines ending with '\'
 c_comment='\s*\/\*.*?\*\/' # match C-style comments and any preceding space
 perl -i -pe "s/${c_comment}//gs unless /${line_preproc_ok}/ || (/${line_comment_only}/ && !/${line_continuation}/)" $(find ${VARIANT_DIR}/llext-edk/include/ -type f)
 
+SKETCH_TOOL="tools/zephyr-sketch-tool/zephyr-sketch-tool"
+PEM_FILE="$VARIANT_DIR/root-rsa-2048.pem"
+
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
     if [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
@@ -132,6 +135,13 @@ for ext in elf bin hex uf2; do
 done
 cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+if [[ -f firmwares/zephyr-$variant.bin ]]; then
+   echo "Running zephyr sketch tool..."
+   TOOL_CMD="$SKETCH_TOOL --squash --loader_bin firmwares/zephyr-$variant.bin --pem_file $PEM_FILE --erase_flash_dim 8192 --image_version 1.0.0.0"
+   echo "$TOOL_CMD"
+   $TOOL_CMD
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
