@@ -63,6 +63,8 @@ struct dynamic_dfu_data {
 
 static struct dynamic_dfu_data dfu_state = {
 	.sketch_addr = 0, .sketch_offset = 0, .erase_size = 0, .block_num = 0, .current_offset = 0};
+
+void wait_for_dfu_update();
 #endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
@@ -188,7 +190,6 @@ static int loader(const struct shell *sh) {
 
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	uintptr_t base_addr = dfu_state.sketch_addr;
-	printk(">>> SKETCH ADDRESS = 0x%08X\n", base_addr);
 #else
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 #endif
@@ -211,6 +212,12 @@ static int loader(const struct shell *sh) {
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
 	}
+
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	if (!sketch_valid) {
+		wait_for_dfu_update();
+	}
+#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
@@ -348,7 +355,6 @@ static int loader(const struct shell *sh) {
 		}
 #endif
 
-		printk("GGGGG\n");
 		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
 		entry_point_t entry_point = (entry_point_t)(base_addr + HEADER_LEN + 1);
@@ -540,6 +546,7 @@ struct usbd_dfu_flash_data {
 	struct flash_img_context fi_ctx;
 	uint32_t last_block;
 	const uint8_t id;
+	bool whole_image;
 
 	union {
 		uint32_t uploaded;
@@ -586,11 +593,48 @@ static int dfu_flash_read(void *const priv, const uint32_t block, const uint16_t
 	return len;
 }
 
+static struct usbd_dfu_flash_data slot1_data = {
+	.id = PARTITION_ID(slot1_partition),
+	.whole_image = false,
+};
+
+static void erase_remaining_partition() {
+	const struct flash_area *fa;
+	LOG_ERR("ERASING WHOLE PARTITION");
+
+	uint32_t erase_offset =
+		((slot1_data.downloaded / dfu_state.erase_size) + 1) * dfu_state.erase_size;
+	int ret;
+
+	ret = flash_area_open(slot1_data.id, &fa);
+	if (ret != 0) {
+		return;
+	}
+
+	if (erase_offset >= fa->fa_size) {
+		flash_area_close(fa);
+		return;
+	}
+
+	size_t len_to_erase = fa->fa_size - erase_offset - dfu_state.erase_size;
+
+	LOG_INF("Erase offset: %d (0x%08X), Erase len: %d (0x%08X)", erase_offset, erase_offset,
+			len_to_erase, len_to_erase);
+
+	ret = flash_area_erase(fa, erase_offset, len_to_erase);
+	if (ret) {
+		LOG_ERR("Failed to erase till the end of partition");
+	}
+	flash_area_close(fa);
+}
+
 static int dfu_flash_write(void *const priv, const uint32_t block, const uint16_t size,
 						   const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
 	struct usbd_dfu_flash_data *const data = priv;
 	const bool flush = (size == 0);
 	int ret;
+
+	data->whole_image = true;
 
 	if (block == 0) {
 		if (flash_img_init_id(&data->fi_ctx, data->id)) {
@@ -632,10 +676,6 @@ static bool slot1_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state 
 
 	return true;
 }
-
-static struct usbd_dfu_flash_data slot1_data = {
-	.id = PARTITION_ID(slot1_partition),
-};
 
 USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, dfu_flash_write,
 					slot1_next);
@@ -884,6 +924,21 @@ static void dfu_update(void) {
 	usbd_disable(&dfu_usbd);
 	usbd_shutdown(&dfu_usbd);
 
+	/* when the loader only is flashed (meaning: the binary contains only
+	 * the loader) the flash isn't erase till the end of the partition
+	 * due to the fact that dfu write and erase a single page each time
+	 * This means that some flash after the loader position might remain
+	 * dirty and prevent us to flash the binary of the only sketch later on
+	 * With this the whole flash is deleted only if the loader is downloaded the
+	 * flash isn't erase till the end of theuint32_t erase_offset = ((slot1_data.downloaded +
+	 dfu_state.erase_size - 1) / dfu_state.erase_size) * dfu_state.erase_size; partition
+	 * Of course the erase happen also if loader + sketch are downloaded
+	 * as a whole */
+	if (slot1_data.whole_image) {
+		slot1_data.whole_image = false;
+		erase_remaining_partition();
+	}
+
 	LOG_INF("Rebooting to apply MCUboot upgrade...");
 	sys_reboot(SYS_REBOOT_COLD);
 }
@@ -939,26 +994,29 @@ void retrieve_flash_info() {
 		}
 	}
 
-	LOG_INF("sketch address: 0x%08X\n", dfu_state.sketch_addr);
-	LOG_INF("sketch offset: 0x%08X\n", dfu_state.sketch_offset);
-	LOG_INF("erase size: 0x%08X\n", dfu_state.erase_size);
-	LOG_INF("sketch block number: 0x%08X\n", dfu_state.block_num);
-	LOG_INF("custom padding: %i\n", value);
+	LOG_INF("sketch address: 0x%08X", dfu_state.sketch_addr);
+	LOG_INF("sketch offset: 0x%08X", dfu_state.sketch_offset);
+	LOG_INF("erase size: 0x%08X", dfu_state.erase_size);
+	LOG_INF("sketch block number: 0x%08X", dfu_state.block_num);
+	LOG_INF("custom padding: %i", value);
 }
 
+void wait_for_dfu_update() {
+	atomic_set(&fade_led_running, 1);
+	k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
+					blink_fade_led, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
+	/* waits for dfu update */
+	dfu_update();
+	atomic_clear(&fade_led_running);
+	k_thread_join(&fade_led_thread, K_FOREVER);
+}
 #endif
 
 int main(void) {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	retrieve_flash_info();
 	if (check_boot_mode()) {
-		atomic_set(&fade_led_running, 1);
-		k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
-						blink_fade_led, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
-		/* waits for dfu update */
-		dfu_update();
-		atomic_clear(&fade_led_running);
-		k_thread_join(&fade_led_thread, K_FOREVER);
+		wait_for_dfu_update();
 	}
 
 #endif
