@@ -91,6 +91,17 @@ func main() {
 		return
 	}
 
+	// Intercept empty sketch with --squash enabled
+	if *squash && flag.NArg() == 0 {
+		if *loader_bin == "" {
+			fmt.Printf("Error: --loader_bin is required when --squash is used.\n")
+			return
+		}
+		fmt.Printf("Running squash process without a sketch file.\n")
+		signAndSquash(*loader_bin, "", *pem_file, *erase_flash_dim, *image_version)
+		return
+	}
+
 	if flag.NArg() != 1 {
 		fmt.Printf("Usage: %s [flags] <filename>\n", os.Args[0])
 		flag.PrintDefaults()
