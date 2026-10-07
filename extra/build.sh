@@ -137,12 +137,22 @@ cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 if [[ -f firmwares/zephyr-$variant.bin ]]; then
-   echo "Running zephyr sketch tool..."
-   TOOL_CMD="$SKETCH_TOOL --squash --loader_bin firmwares/zephyr-$variant.bin --pem_file $PEM_FILE --erase_flash_dim 8192 --image_version 1.0.0.0"
-   echo "$TOOL_CMD"
-   $TOOL_CMD
+    # Dynamically extract squash arguments using the Python helper
+    PLATFORM_PATH=$(pwd)
+    BOOTLOADER_FILE="zephyr-${variant}.bin"
+    
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py "boards.txt" "${board}" "${PLATFORM_PATH}" "${VARIANT_DIR}" "${BOOTLOADER_FILE}" "${variant}")
+    
+    if [ -n "$SQUASH_ARGS" ]; then
+        SKETCH_TOOL="tools/zephyr-sketch-tool/zephyr-sketch-tool"
+        echo "Running zephyr sketch tool..."
+        TOOL_CMD="$SKETCH_TOOL $SQUASH_ARGS"
+	echo "$TOOL_CMD"
+        $TOOL_CMD
+    else
+        echo "Skipping squash tool (no build.zsk_args.squash property found for board ${board})"
+    fi
 fi
-
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
 extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
