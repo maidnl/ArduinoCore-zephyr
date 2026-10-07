@@ -131,6 +131,8 @@ edk_qual='extern inline __attribute__((always_inline, gnu_inline))'
 edk_funcs='int32_t k_sleep\(k_timeout_t timeout\)|void k_busy_wait\(uint32_t usec_to_wait\)'
 perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" "$syscalls_hdr"
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
+SKETCH_TOOL="tools/zephyr-sketch-tool/zephyr-sketch-tool"
+PEM_FILE="$VARIANT_DIR/root-rsa-2048.pem"
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
