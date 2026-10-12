@@ -50,5 +50,10 @@ config CUSTOM_FLASH_ALIGN
 
 endmenu
 
+config LOADER_DFU_MAGIC
+  int "Number used to activate the loader DFU via memory retention"
+  range 0 255
+  default 120
+
 source "Kconfig.zephyr"
 rsource "ota/Kconfig"

@@ -475,6 +475,7 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/dfu/flash_img.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/retention/retention.h>
 
 static const struct pwm_dt_spec pwm_led = PWM_DT_SPEC_GET(DT_ALIAS(fade_led));
 
@@ -532,19 +533,21 @@ static void blink_fade_led(void *arg0, void *arg1, void *arg2) {
 	}
 }
 
-static bool check_boot_mode() {
-	bool rv = false;
-	int boot_mode = bootmode_check(BOOT_MODE_TYPE_BOOTLOADER);
-	if (boot_mode < 0) {
-		LOG_ERR("ERROR: Unable to read boot mode (%d)\n", boot_mode);
+const struct device *retention2 = DEVICE_DT_GET(DT_NODELABEL(retention2));
+
+static bool check_dfu_mode_requested() {
+	uint8_t magic = 0;
+	if (retention_read(retention2, 0, &magic, 1)) {
+		LOG_ERR("Unable to read retention2\n");
+	} else {
+		if (magic == CONFIG_LOADER_DFU_MAGIC) {
+			if (retention_clear(retention2) < 0) {
+				LOG_ERR("ERROR: Unable delete retention2\n");
+			}
+			return true;
+		}
 	}
-	if (boot_mode == 1) {
-		rv = true;
-	}
-	if (bootmode_clear()) {
-		printk("ERROR: Unable to clear boot mode\n");
-	}
-	return rv;
+	return false;
 }
 
 struct usbd_dfu_flash_data {
@@ -1020,7 +1023,7 @@ void wait_for_dfu_update() {
 int main(void) {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	retrieve_flash_info();
-	if (check_boot_mode()) {
+	if (check_dfu_mode_requested()) {
 		wait_for_dfu_update();
 	}
 
