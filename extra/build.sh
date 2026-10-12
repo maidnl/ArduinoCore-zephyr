@@ -160,6 +160,13 @@ if [[ -f firmwares/zephyr-$variant.bin ]]; then
         echo "Skipping squash tool (no build.zsk_args.squash property found for board ${board})"
     fi
 fi
+
+if [[ ! -z $SQUASH_ARGS ]]; then
+	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]]; then
+		FLASH_ERASE_DIM="${BASH_REMATCH[1]}"
+	fi
+fi
+
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
 extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
@@ -253,14 +260,15 @@ if [ ! -z "$board" ]; then
 	update_local_field "bootloader.maximum_size" $LOADER_MAX_SIZE
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
-	#
-	# TODO: the _sketch_max_size is used in a improper way!!!
-	#
-	if [ "$target" == "arduino_mezza" ]; then
+
+	if [[ ! -z $SQUASH_ARGS ]]; then
+		CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
 		TOTAL_PART_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
 		LOADER_BIN_SIZE=$(stat -c%s "${IMAGE_DIR}/zephyr/zephyr.signed.bin")
-		PADDED_LOADER_SIZE=$(( (LOADER_BIN_SIZE + 8191) / 8192 * 8192 ))
-		CODE_SIZE=$(( TOTAL_PART_SIZE - PADDED_LOADER_SIZE ))
+		# loader is already padded
+		# removing 2 blocks because MCU boot requires 2 blocks at 
+		# the end of the flash partition
+		CODE_SIZE=$(( TOTAL_PART_SIZE - LOADER_BIN_SIZE - 2 * FLASH_ERASE_DIM ))
 	else
 		CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
 	fi

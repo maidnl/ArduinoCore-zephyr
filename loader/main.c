@@ -126,7 +126,8 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 
 /* Export Flash parameters for use by core building scripts */
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
-/* TODO : the _sketch_max_size is used in a improper way !!! */
+/* sketch now is with the loader inside slot1_partition there is no
+ * more user_sketch */
 __attribute__((retain)) const uintptr_t sketch_max_size =
 	DT_REG_SIZE(DT_NODELABEL(slot1_partition));
 #else
