@@ -28,6 +28,14 @@
 static const struct gpio_dt_spec error_led = GPIO_DT_SPEC_GET(ERROR_LED_NODE, gpios);
 #endif
 
+/* All board LEDs, switched off so only the error LED is visible (e.g. on RGB LEDs). */
+#define LED_GPIO_SPEC(node_id) GPIO_DT_SPEC_GET(node_id, gpios),
+static const struct gpio_dt_spec board_leds[] = {
+#if DT_HAS_COMPAT_STATUS_OKAY(gpio_leds)
+	DT_FOREACH_CHILD_STATUS_OKAY(DT_INST(0, gpio_leds), LED_GPIO_SPEC)
+#endif
+};
+
 /* A blink pattern is a cyclic list of LED states, each held for "ms". */
 struct blink_step {
 	int level;
@@ -46,6 +54,12 @@ static const struct blink_step recoverable_pattern[] = {
 };
 
 static const struct gpio_dt_spec *error_led_setup(void) {
+	for (size_t i = 0; i < ARRAY_SIZE(board_leds); i++) {
+		if (gpio_is_ready_dt(&board_leds[i])) {
+			gpio_pin_configure_dt(&board_leds[i], GPIO_OUTPUT_INACTIVE);
+		}
+	}
+
 #ifdef ERROR_LED_NODE
 	if (gpio_is_ready_dt(&error_led)) {
 		gpio_pin_configure_dt(&error_led, GPIO_OUTPUT_INACTIVE);
