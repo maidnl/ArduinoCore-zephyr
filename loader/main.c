@@ -274,6 +274,11 @@ static int loader(const struct shell *sh) {
 	}
 #endif
 
+	if (!sketch_valid) {
+		recoverable_error_led();
+		return -EINVAL;
+	}
+
 	size_t sketch_buf_len = sketch_hdr->len;
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
