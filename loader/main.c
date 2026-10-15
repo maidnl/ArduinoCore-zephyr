@@ -178,7 +178,7 @@ static int loader(const struct shell *sh) {
 		recoverable_error_led();
 		return rc;
 	}
-	
+
 #if defined(CONFIG_OTA)
 	try_ota_update(fa);
 #endif
@@ -189,7 +189,7 @@ static int loader(const struct shell *sh) {
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 #endif
 
-	char header[HEADER_LEN];
+	char header[SKETCH_HEADER_LEN];
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	rc = flash_area_read(fa, dfu_state.sketch_offset, header, sizeof(header));
 #else
