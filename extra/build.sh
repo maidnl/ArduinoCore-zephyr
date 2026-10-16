@@ -159,6 +159,46 @@ extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
 
+if [ x"$target" == x"arduino_mezza" ]; then
+	echo "build.sh: (mcuboot) adding _sketch_start symbol to sym-static.ld"
+	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
+	
+	# Read the array of values from the python script
+	read -r -a SLOT0_INFO <<< $(python3 extra/extract_slot0_info.py "${IMAGE_DIR}/zephyr/zephyr.dts")
+	
+	if [ ${#SLOT0_INFO[@]} -eq 0 ]; then
+		echo "Error: Could not find slot0_partition info in zephyr.dts"
+		exit 1
+	fi
+	
+	SLOT0_ADDR_HEX=${SLOT0_INFO[0]}
+	SLOT0_DIM=${SLOT0_INFO[1]}
+	DTS_FLASH_ERASE_DIM=${SLOT0_INFO[2]}
+	
+	calculated_start=$(( size_bytes + SLOT0_ADDR_HEX ))
+	actual_start=$(printf "0x%X" "$calculated_start")
+	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
+	
+	echo "build.sh: (mcuboot) adding _sketch_max_size symbol to sym-static.ld"
+	
+	# Fallback to SQUASH_ARGS flash erase dimension if not found in DTS
+	if [ "$DTS_FLASH_ERASE_DIM" != "None" ] && [ -n "$DTS_FLASH_ERASE_DIM" ]; then
+		USED_FLASH_ERASE_DIM=$DTS_FLASH_ERASE_DIM
+	else
+		USED_FLASH_ERASE_DIM=$FLASH_ERASE_DIM
+	fi
+	
+	if [ -z "$USED_FLASH_ERASE_DIM" ]; then
+		echo "Error: Flash erase dimension not found in DTS or SQUASH_ARGS"
+		exit 1
+	fi
+	
+	# Calculate sketch_max_size = slot0_dimension - sketch_start_offset - (2 * erase_sector)
+	calculated_max_size=$(( SLOT0_DIM - size_bytes - (2 * USED_FLASH_ERASE_DIM) ))
+	actual_max_size=$(printf "0x%X" "$calculated_max_size")
+	echo "PROVIDE(_sketch_max_size = ${actual_max_size});" >> "${VARIANT_DIR}/syms-static.ld"
+fi
+
 cmake -P extra/gen_arduino_files.cmake $variant
 
 get_value_from_text_file() {

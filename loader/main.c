@@ -125,6 +125,9 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 #endif /* CONFIG_USERSPACE */
 
 /* Export Flash parameters for use by core building scripts */
+/* When MCUBOOT is used the sketch is placed in a variable place in the
+ * flash: the exact place depends on the loader dimension so when we build
+ * the loader we provide those values directly inside build.sh */
 #ifndef CONFIG_BOARD_ARDUINO_MEZZA
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
