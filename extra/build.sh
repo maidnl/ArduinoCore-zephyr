@@ -188,7 +188,12 @@ if [ x"$target" == x"arduino_mezza" ]; then
 	echo "Adding _sketch_start symbol to sym-static.ld"
 	echo "********************************************"
 	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
-	calculated_start=$(( size_bytes + 0x08020000 ))
+	SLOT1_ADDR_HEX=$(python3 extra/get_slot1_address.py "${IMAGE_DIR}/zephyr/zephyr.dts")
+	if [ -z "$SLOT1_ADDR_HEX" ]; then
+		echo "Error: Could not find slot1_partition starting address in zephyr.dts"
+		exit 1
+	fi
+	calculated_start=$(( size_bytes + SLOT1_ADDR_HEX ))
 	actual_start=$(printf "0x%X" "$calculated_start")
 	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
 fi
