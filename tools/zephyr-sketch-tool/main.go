@@ -242,7 +242,26 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	 * ----------------------------------------------- */
 	config_file = ConfigPathFromBin(loaderBinFile)
 	dts_file = DtsPathFromBin(loaderBinFile)
-	output_file = OutPathFromBin(loaderBinFile)
+   
+	/*
+	 * Building output filename
+	 * ----------------------------------------------- */
+	/* 
+    * If the sketch file binary is provided then the output name will be
+    * <sketch-filename>.signed.bin (this will however contain loader + sketch)
+	 * It the sketch file is not provided then a file is created in 
+    * in <cache>/arduino/firmwares
+    */
+	if sketchBinFile != "" {
+		output_file = OutPathFromBin(sketchBinFile);
+	} else {
+		output_loader_path, ok := OutLoaderSignedPath();
+		if !ok {
+			log.Fatalf("Error while creating cache folder!");
+		}
+		output_loader_file := filepath.Join(output_loader_path, filepath.Base(loaderBinFile));
+		output_file = OutPathFromBin(output_loader_file)
+	}
 
 	/*
 	 * CALCULATING LOADER SIZE
@@ -645,4 +664,19 @@ func DtsPathFromBin(binPath string) string {
 
 func OutPathFromBin(binPath string) string {
 	return strings.TrimSuffix(binPath, filepath.Ext(binPath)) + ".signed.bin"
+}
+
+func OutLoaderSignedPath() (string, bool) {
+	cacheDir, err := os.UserCacheDir()
+	var rv bool = true;
+	if err != nil {
+			log.Fatal("Could not find cache directory:", err)
+	}
+
+	appCacheDir := filepath.Join(cacheDir, "arduino/firmwares");
+	if err := os.MkdirAll(appCacheDir, 0755); err != nil {
+		fmt.Println("[ERROR]:Failed to create app cache directory!");
+		rv = false;
+	}
+	return appCacheDir, rv
 }
