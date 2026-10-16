@@ -183,6 +183,15 @@ extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
 
+if [ x"$target" == x"arduino_mezza" ]; then
+	echo "*******************************************"
+	echo "Adding _sketch_start symbol to sym-static.ld"
+	echo "********************************************"
+	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
+	calculated_start=$(( size_bytes + 0x08020000 ))
+	actual_start=$(printf "0x%X" "$calculated_start")
+	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
+fi
 cmake -P extra/gen_arduino_files.cmake $variant
 
 get_value_from_text_file() {
