@@ -800,7 +800,7 @@ mezza.upload.dfuse=
 mezza.upload_port.0.vid=0x2341
 mezza.upload_port.0.pid=0x017B
 mezza.upload.target=stm32h5f5xx
-mezza.upload.artifacts.sketch={runtime.platform.path}/firmwares/zephyr-{build.variant}.signed.bin
+mezza.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
 
 mezza.leave.dfuse=
 mezza.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
