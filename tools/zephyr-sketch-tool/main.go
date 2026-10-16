@@ -253,7 +253,7 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
     * in <cache>/arduino/firmwares
     */
 	if sketchBinFile != "" {
-		output_file = OutPathFromBin(sketchBinFile);
+		output_file = AddSignedModifier(sketchBinFile);
 	} else {
 		output_loader_path, ok := OutLoaderSignedPath();
 		if !ok {
@@ -679,4 +679,11 @@ func OutLoaderSignedPath() (string, bool) {
 		rv = false;
 	}
 	return appCacheDir, rv
+}
+
+func AddSignedModifier(fullPath string) string {
+	dir := filepath.Dir(fullPath)
+	fileName := filepath.Base(fullPath)
+	newFileName := strings.Replace(fileName, ".ino.", ".ino.signed.", 1)
+	return filepath.Join(dir, newFileName)
 }
