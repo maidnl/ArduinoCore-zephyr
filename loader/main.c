@@ -673,7 +673,7 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 		return 0;
 	}
 
-	/* In case there is no custom padding the sketch is automatically alined
+	/* In case there is no custom padding the sketch is automatically aligned
 	 * at the first flash block after the loader, so we start to delete the
 	 * sketch from there*/
 	uint32_t start_offset = data->sketch_offset;
@@ -716,9 +716,9 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 			goto end;
 		}
 
-		LOG_INF("Erase sketch (2) 0x%08x bytes at offset 0x%08x", sketch_total_size,
-				data->sketch_offset);
-		err = flash_area_erase(fa, start_offset, sketch_total_size);
+		LOG_INF("Erase sketch initial block (2) 0x%08x bytes at offset 0x%08x", data->erase_size,
+				start_offset);
+		err = flash_area_erase(fa, start_offset, data->erase_size);
 		if (err) {
 			LOG_ERR("Flash area erase failed - 2 (%d)", err);
 			goto end;
@@ -758,6 +758,18 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 			}
 
 			process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
+
+			/* Erase dynamically as we cross into a new block */
+			if (write_offset > start_offset && (write_offset % data->erase_size == 0)) {
+				LOG_INF("Dynamically erasing block of size 0x%08x at offset 0x%08x",
+						data->erase_size, write_offset);
+				err = flash_area_erase(fa, write_offset, data->erase_size);
+				if (err) {
+					LOG_ERR("Dynamic flash area erase failed at offset 0x%08x (%d)", write_offset,
+							err);
+					goto end;
+				}
+			}
 		}
 
 		/*
