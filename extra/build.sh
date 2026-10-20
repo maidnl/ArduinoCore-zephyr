@@ -143,6 +143,21 @@ done
 cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
+if [[ -f firmwares/zephyr-$variant.bin ]]; then
+    # Dynamically extract squash arguments using the Python helper
+    PLATFORM_PATH=$(pwd)
+    BOOTLOADER_FILE="zephyr-${variant}.bin"
+    
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py "boards.txt" "${board}" "${PLATFORM_PATH}" "${VARIANT_DIR}" "${BOOTLOADER_FILE}" "${variant}")
+fi
+# extract FLASH_ERASE_DIM as backup in case this information is not present 
+# in the dts file 
+if [[ ! -z $SQUASH_ARGS ]]; then
+	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]]; then
+		FLASH_ERASE_DIM="${BASH_REMATCH[1]}"
+	fi
+fi
+
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
 extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
