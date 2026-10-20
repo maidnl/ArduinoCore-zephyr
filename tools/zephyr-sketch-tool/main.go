@@ -6,9 +6,8 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
@@ -30,7 +29,7 @@ const (
 	TlvInfoMagic uint16 = 0x6907
 	TlvKeyHash   uint8  = 0x01
 	TlvSha256    uint8  = 0x10
-	TlvRsa2048   uint8  = 0x20
+	TlvEcdsa256  uint8  = 0x22
 	HeaderSize   uint16 = 0x400
 	SlotSize     int    = 1540096
 )
@@ -380,9 +379,9 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		log.Fatalf("Failed to parse PEM block")
 	}
 
-	privKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	privKey, err := x509.ParseECPrivateKey(block.Bytes)
 	if err != nil {
-		log.Fatalf("Failed to parse RSA key: %v", err)
+		log.Fatalf("Failed to parse ECDSA key: %v", err)
 	}
 
 	/* CONSTRUCT IMAGE HEADER */
@@ -426,14 +425,15 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	 */
 	imgHash := sha256.Sum256(image)
 
-	/* Calculate the KEYHASH (SHA-256 of the PKCS#1 DER-encoded Public Key) */
-	pubKeyBytes := x509.MarshalPKCS1PublicKey(&privKey.PublicKey)
+	/* Calculate the KEYHASH (SHA-256 of the DER-encoded Public Key) */
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+	if err != nil {
+		log.Fatalf("Failed to marshal public key: %v", err)
+	}
 	keyHash := sha256.Sum256(pubKeyBytes)
 
-	/* Generate RSA-PSS Signature */
-	signature, err := rsa.SignPSS(rand.Reader, privKey, crypto.SHA256, imgHash[:], &rsa.PSSOptions{
-		SaltLength: rsa.PSSSaltLengthEqualsHash,
-	})
+	/* Generate ECDSA P-256 Signature */
+	signature, err := ecdsa.SignASN1(rand.Reader, privKey, imgHash[:])
 	if err != nil {
 		log.Fatalf("Failed to sign payload: %v", err)
 	}
@@ -488,7 +488,8 @@ func parseVersionString(ver string) ImageVersion {
 // appendTLVs handles the exact struct packing required by MCUboot
 func appendTLVs(img *bytes.Buffer, keyHash []byte, imgHash []byte, sig []byte) {
 	binary.Write(img, binary.LittleEndian, TlvInfoMagic)
-	binary.Write(img, binary.LittleEndian, uint16(336))
+	// Size is dynamic because ECDSA ASN.1 signatures vary slightly in length (header + TLVs)
+	binary.Write(img, binary.LittleEndian, uint16(80+len(sig)))
 
 	// 1. Write SHA256 TLV (Type 0x10)
 	binary.Write(img, binary.LittleEndian, TlvSha256)
@@ -502,8 +503,8 @@ func appendTLVs(img *bytes.Buffer, keyHash []byte, imgHash []byte, sig []byte) {
 	binary.Write(img, binary.LittleEndian, uint16(len(keyHash)))
 	img.Write(keyHash)
 
-	// 3. Write RSA Signature TLV (Type 0x20)
-	binary.Write(img, binary.LittleEndian, TlvRsa2048)
+	// 3. Write ECDSA Signature TLV (Type 0x22)
+	binary.Write(img, binary.LittleEndian, TlvEcdsa256)
 	binary.Write(img, binary.LittleEndian, uint8(0))
 	binary.Write(img, binary.LittleEndian, uint16(len(sig)))
 	img.Write(sig)
