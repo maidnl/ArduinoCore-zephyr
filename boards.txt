@@ -803,7 +803,6 @@ mezza.upload.target=stm32h5f5xx
 mezza.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
 
 mezza.leave.dfuse=
-mezza.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
 
 mezza.bootloader.tool=dfu-util
 mezza.bootloader.tool.default=dfu-util
@@ -813,3 +812,10 @@ mezza.bootloader.pid=0x017B
 mezza.bootloader.native_usb=true
 mezza.bootloader.interface=0
 mezza.bootloader.dfuse=
+
+mezza.tools.dfu-util.loader.cmd="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.squash} --dfu_tool "{runtime.tools.dfu-util.path}/dfu-util" --dfu_args "--device ,{bootloader.vid}:{bootloader.pid} -a{bootloader.interface} {bootloader.dfuse}"
+
+mezza.loader.args.with_sketch={empty}
+mezza.loader.args.without_sketch={empty}
+mezza.sketch.args.with_loader={empty} -w
+mezza.sketch.args.without_loader={empty} -w
