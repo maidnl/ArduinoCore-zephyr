@@ -813,7 +813,8 @@ mezza.bootloader.native_usb=true
 mezza.bootloader.interface=0
 mezza.bootloader.dfuse=
 
-mezza.tools.dfu-util.loader.cmd="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.squash} --dfu_tool "{runtime.tools.dfu-util.path}/dfu-util" --dfu_args "--device ,{bootloader.vid}:{bootloader.pid} -a{bootloader.interface} {bootloader.dfuse}"
+mezza.flash-loader-and-sketch.2=run echo
+mezza.tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{bootloader.interface} {upload.dfuse}{leave.dfuse}
 
 mezza.loader.args.with_sketch={empty}
 mezza.loader.args.without_sketch={empty}
