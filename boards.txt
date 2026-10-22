@@ -813,7 +813,7 @@ mezza.bootloader.dfuse=
 mezza.flash-loader-and-sketch.2=run echo
 mezza.tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{bootloader.interface} {upload.dfuse}{leave.dfuse}
 
-mezza.loader.args.with_sketch={empty}
-mezza.loader.args.without_sketch={empty}
+mezza.loader.args.with_sketch={empty} -w
+mezza.loader.args.without_sketch={empty} -w
 mezza.sketch.args.with_loader={empty} -w
 mezza.sketch.args.without_loader={empty} -w
