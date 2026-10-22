@@ -52,6 +52,8 @@ struct dynamic_dfu_data {
 
 static struct dynamic_dfu_data dfu_state = {
 	.sketch_addr = 0, .sketch_offset = 0, .erase_size = 0, .block_num = 0, .current_offset = 0};
+
+void wait_for_dfu_update();
 #endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
@@ -178,7 +180,6 @@ static int loader(const struct shell *sh) {
 
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	uintptr_t base_addr = dfu_state.sketch_addr;
-	printk(">>> SKETCH ADDRESS = 0x%08X\n", base_addr);
 #else
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 #endif
@@ -202,6 +203,12 @@ static int loader(const struct shell *sh) {
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
 	}
+
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	if (!sketch_valid) {
+		wait_for_dfu_update();
+	}
+#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
@@ -344,7 +351,6 @@ static int loader(const struct shell *sh) {
 		}
 #endif
 
-		printk("GGGGG\n");
 		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
 		entry_point_t entry_point = (entry_point_t)(base_addr + SKETCH_HEADER_LEN + 1);
@@ -940,26 +946,29 @@ void retrieve_flash_info() {
 		}
 	}
 
-	LOG_INF("sketch address: 0x%08X\n", dfu_state.sketch_addr);
-	LOG_INF("sketch offset: 0x%08X\n", dfu_state.sketch_offset);
-	LOG_INF("erase size: 0x%08X\n", dfu_state.erase_size);
-	LOG_INF("sketch block number: 0x%08X\n", dfu_state.block_num);
-	LOG_INF("custom padding: %i\n", value);
+	LOG_INF("sketch address: 0x%08X", dfu_state.sketch_addr);
+	LOG_INF("sketch offset: 0x%08X", dfu_state.sketch_offset);
+	LOG_INF("erase size: 0x%08X", dfu_state.erase_size);
+	LOG_INF("sketch block number: 0x%08X", dfu_state.block_num);
+	LOG_INF("custom padding: %i", value);
 }
 
+void wait_for_dfu_update() {
+	atomic_set(&fade_led_running, 1);
+	k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
+					blink_fade_led, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
+	/* waits for dfu update */
+	dfu_update();
+	atomic_clear(&fade_led_running);
+	k_thread_join(&fade_led_thread, K_FOREVER);
+}
 #endif
 
 int main(void) {
 #ifdef CONFIG_BOARD_ARDUINO_MEZZA
 	retrieve_flash_info();
 	if (check_boot_mode()) {
-		atomic_set(&fade_led_running, 1);
-		k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
-						blink_fade_led, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
-		/* waits for dfu update */
-		dfu_update();
-		atomic_clear(&fade_led_running);
-		k_thread_join(&fade_led_thread, K_FOREVER);
+		wait_for_dfu_update();
 	}
 
 #endif
