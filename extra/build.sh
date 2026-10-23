@@ -94,17 +94,15 @@ BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
 
-# Only arduino_mezza currently needs an MCUboot companion image, which
-# requires a sysbuild (multi-image) build. All other boards keep the
-# original single-image 'west build' invocation and output layout.
-#
-# Under sysbuild, the loader's own build tree is namespaced under
-# ${BUILD_DIR}/loader (instead of directly under ${BUILD_DIR}), and the
-# 'llext-edk' target is not part of the default sysbuild 'all' target, so
-# it must be built separately against the loader image's own build dir.
-if [ x"$target" == x"arduino_mezza" ]; then
+# A variant shipping a sysbuild.conf boots through MCUboot built alongside the
+# loader (its MCUboot config, mcuboot.conf/.overlay, is picked up by
+# loader/sysbuild.cmake). Under sysbuild the loader's tree is
+# ${BUILD_DIR}/loader and the llext-edk target is not part of 'all', so it is
+# built separately.
+if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	IMAGE_DIR=${BUILD_DIR}/loader
-	west build -d ${BUILD_DIR} -b ${target} --sysbuild loader ${args}
+	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
+		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}"
 	cmake --build ${IMAGE_DIR} --target llext-edk
 else
 	IMAGE_DIR=${BUILD_DIR}
@@ -131,8 +129,6 @@ edk_qual='extern inline __attribute__((always_inline, gnu_inline))'
 edk_funcs='int32_t k_sleep\(k_timeout_t timeout\)|void k_busy_wait\(uint32_t usec_to_wait\)'
 perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" "$syscalls_hdr"
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
-SKETCH_TOOL="tools/zephyr-sketch-tool/zephyr-sketch-tool"
-PEM_FILE="$VARIANT_DIR/root-rsa-2048.pem"
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
@@ -143,7 +139,14 @@ done
 cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
-if [[ -f firmwares/zephyr-$variant.bin ]]; then
+# The MCUboot companion image (sysbuild builds only)
+rm -f firmwares/mcuboot-$variant.bin
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
+    cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
+fi
+
+SQUASH_ARGS=
+if [ -n "$board" ] && [[ -f firmwares/zephyr-$variant.bin ]]; then
     # Dynamically extract squash arguments using the Python helper
     PLATFORM_PATH=$(pwd)
     BOOTLOADER_FILE="zephyr-${variant}.bin"
@@ -174,7 +177,9 @@ extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
 
-if [ x"$target" == x"arduino_mezza" ]; then
+# Boards squashing the sketch after the loader in the MCUboot slot0 image:
+# the sketch position depends on the loader size, so it is computed here.
+if [ -n "$SQUASH_ARGS" ]; then
 	echo "build.sh: (mcuboot) adding _sketch_start symbol to sym-static.ld"
 	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
 	
